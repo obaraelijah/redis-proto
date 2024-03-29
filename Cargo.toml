@@ -3,12 +3,5 @@ name = "redis-proto"
 version = "0.1.0"
 edition = "2021"
 
-[lib]
-name = "redis_proto"
-path = "src/lib.rs"
-
-[[bin]]
-name = "redis-proto"
-path = "src/main.rs"
 
 [dependencies]
