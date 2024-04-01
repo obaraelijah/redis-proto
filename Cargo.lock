@@ -462,6 +462,7 @@ version = "0.1.0"
 dependencies = [
  "bytes",
  "lazy_static",
+ "memchr",
  "slog",
  "sloggers",
  "tokio",

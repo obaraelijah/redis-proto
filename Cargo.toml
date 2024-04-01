@@ -18,3 +18,4 @@ bytes = { version = "1.0.0", features = ["serde"] }
 sloggers = "0.3.4"
 lazy_static = "1.4.0"
 slog = "2.5.2"
+memchr = "2.3.0"
