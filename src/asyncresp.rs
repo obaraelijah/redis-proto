@@ -45,9 +45,15 @@ fn word(buf: &BytesMut, pos: usize) -> Option<(usize, BufSplit)> {
 }
 
 fn simple_string(buf: &BytesMut, pos: usize) -> RedisResult {
-    Ok(word(buf, pos).map(|(pos, word)| (pos, RedisBufSplit::String(word))))
+    match word(buf, pos) {
+        Some((pos, word)) => Ok(Some((pos, RedisBufSplit::String(word)))),
+        None => Ok(None),
+    }
 }
 
 fn error(buf: &BytesMut, pos: usize) -> RedisResult {
-    Ok(word(buf, pos).map(|(pos, word)| (pos, RedisBufSplit::Error(word))))
+    match word(buf, pos) {
+        Some((pos, word)) => Ok(Some((pos, RedisBufSplit::Error(word)))),
+        None => Ok(None),
+    }
 }
