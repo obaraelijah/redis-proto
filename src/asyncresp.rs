@@ -1,7 +1,7 @@
 use memchr::memchr;
 use std::str;
 
-use crate::types::RedisValueRef;
+use crate::types::{RedisValueRef, NULL_ARRAY, NULL_BULK_STRING};
 
 use bytes::{ Bytes, BytesMut};
 use tokio_util::codec::{Decoder, Encoder};
@@ -37,7 +37,7 @@ impl RedisBufSplit {
     fn redis_value(self, buf: &Bytes) -> RedisValueRef {
         match self {
             // bfs is BufSplit(start, end), which has the as_bytes 
-            RedisBufSplit::String(bfs) => RedisValueRef::String(bfs.as_bytes(buf)),
+            RedisBufSplit::String(bfs) => RedisValueRef::BulkString(bfs.as_bytes(buf)),
             RedisBufSplit::Error(bfs) => RedisValueRef::Error(bfs.as_bytes(buf)),
             RedisBufSplit::Array(arr) => {
                 RedisValueRef::Array(arr.into_iter().map(|bfs| bfs.redis_value(buf)).collect())
@@ -216,5 +216,43 @@ impl Encoder<RedisValueRef> for RespParser {
 }
 
 fn write_redis_value(item: RedisValueRef, dst: &mut BytesMut) {
-    unimplemented!( )
+    match item {
+        RedisValueRef::Error(e) => {
+            dst.extend_from_slice(b"-");
+            dst.extend_from_slice(&e);
+            dst.extend_from_slice(b"\r\n");
+        }
+        RedisValueRef::ErrorMsg(e) => {
+            dst.extend_from_slice(b"-");
+            dst.extend_from_slice(&e);
+            dst.extend_from_slice(b"\r\n");
+        }
+        RedisValueRef::SimpleString(s) => {
+            dst.extend_from_slice(b"+");
+            dst.extend_from_slice(&s);
+            dst.extend_from_slice(b"\r\n");
+        }
+        RedisValueRef::BulkString(s) => {
+            dst.extend_from_slice(b"$");
+            dst.extend_from_slice(s.len().to_string().as_bytes());
+            dst.extend_from_slice(b"\r\n");
+            dst.extend_from_slice(&s);
+            dst.extend_from_slice(b"\r\n");
+        }
+        RedisValueRef::Array(array) => {
+            dst.extend_from_slice(b"*");
+            dst.extend_from_slice(array.len().to_string().as_bytes());
+            dst.extend_from_slice(b"\r\n");
+            for redis_value in array {
+                write_redis_value(redis_value, dst);
+            }
+        }
+        RedisValueRef::Int(i) => {
+            dst.extend_from_slice(b":");
+            dst.extend_from_slice(i.to_string().as_bytes());
+            dst.extend_from_slice(b"\r\n");
+        }
+        RedisValueRef::NullBulkString => dst.extend_from_slice(NULL_BULK_STRING.as_bytes()),
+        RedisValueRef::NullArray => dst.extend_from_slice(NULL_ARRAY.as_bytes()),
+    }
 }

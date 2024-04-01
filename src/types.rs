@@ -10,13 +10,17 @@ pub type Key = Bytes;
 /// and outputs are converted into RedisValues.
 #[derive(PartialEq, Clone)]
 pub enum RedisValueRef {
-    String(Bytes),
+    BulkString(Bytes),
+    SimpleString(Bytes),
     Error(Bytes),
     Int(i64),
     Array(Vec<RedisValueRef>),
+    ErrorMsg(Vec<u8>), // This is not a RESP type. This is an redis-proto internal error type.
     NullArray,
     NullBulkString,
-    ErrorMsg(Vec<u8>), // This is not a RESP type. This is an redis-proto internal error type.
 }
 
-
+/// Special constants in the RESP protocol.
+pub const NULL_BULK_STRING: &str = "$-1\r\n";
+pub const NULL_ARRAY: &str = "*-1\r\n";
+pub const EMPTY_ARRAY: &str = "*0\r\n";
