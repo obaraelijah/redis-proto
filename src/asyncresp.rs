@@ -1,5 +1,6 @@
-use bytes::{Bytes, BytesMut};
+use bytes::{buf, Bytes, BytesMut};
 use memchr::memchr;
+use std::str;
 
 #[derive(Debug)]
 pub enum RESPError {
@@ -23,6 +24,14 @@ type RedisResult = Result<Option<(usize, RedisBufSplit)>, RESPError>;
 
 struct BufSplit(usize, usize); //useful for creating a view into a larger byte slice without copying the data
 
+impl BufSplit {
+    /// Get a lifetime appropriate slice of the underlying buffer.
+    ///
+    /// Constant time.
+    fn as_slice<'a>(&self, buf: &'a BytesMut) -> &'a [u8] {
+        &buf[self.0..self.1]
+    }
+}
 /// Get a word from `buf` starting at `pos`
 #[inline]
 fn word(buf: &BytesMut, pos: usize) -> Option<(usize, BufSplit)> {
@@ -44,16 +53,27 @@ fn word(buf: &BytesMut, pos: usize) -> Option<(usize, BufSplit)> {
     })
 }
 
-fn simple_string(buf: &BytesMut, pos: usize) -> RedisResult {
+fn int(buf: &BytesMut, pos: usize) -> Result<Option<(usize, i64)>, RESPError> {
     match word(buf, pos) {
-        Some((pos, word)) => Ok(Some((pos, RedisBufSplit::String(word)))),
+        Some((pos, word)) => {
+            // word.as_slice(buf) is the method call BufSplit::as_slice(&self, &BytesMut) to access the byte slice.
+            let s = str::from_utf8(word.as_slice(buf)).map_err(|_| RESPError::IntParseFailure)?;
+            // Convert the string to an i64. Note the `?` for early returns.
+            let i = s.parse().map_err(|_| RESPError::IntParseFailure)?;
+            Ok(Some((pos, i)))
+        }
         None => Ok(None),
     }
 }
 
+fn simple_string(buf: &BytesMut, pos: usize) -> RedisResult {
+    Ok(word(buf, pos).map(|(pos, word)| (pos, RedisBufSplit::String(word))))
+}
+
 fn error(buf: &BytesMut, pos: usize) -> RedisResult {
-    match word(buf, pos) {
-        Some((pos, word)) => Ok(Some((pos, RedisBufSplit::Error(word)))),
-        None => Ok(None),
-    }
+    Ok(word(buf, pos).map(|(pos, word)| (pos, RedisBufSplit::Error(word))))
+}
+
+fn resp_int(buf: &BytesMut, pos: usize) -> RedisResult {
+    Ok(int(buf, pos)?.map(|(pos, int)| (pos, RedisBufSplit::Int(int))))
 }
