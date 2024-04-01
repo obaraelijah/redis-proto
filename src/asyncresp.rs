@@ -1,5 +1,6 @@
 use memchr::memchr;
 use std::str;
+use std::convert::From;
 
 use crate::types::{RedisValueRef, NULL_ARRAY, NULL_BULK_STRING};
 
@@ -21,6 +22,7 @@ impl From<std::io::Error> for RESPError {
         RESPError::IOError(error)
     }
 }
+
 enum RedisBufSplit {
     String(BufSplit),
     Error(BufSplit),
@@ -51,6 +53,9 @@ impl RedisBufSplit {
 
 type RedisResult = Result<Option<(usize, RedisBufSplit)>, RESPError>;
 
+/// Fundamental struct for viewing byte slices
+///
+/// Used for zero-copy redis values.
 struct BufSplit(usize, usize); //useful for creating a view into a larger byte slice without copying the data
 
 impl BufSplit {
@@ -128,10 +133,12 @@ fn bulk_string(buf: &BytesMut, pos: usize) -> RedisResult {
     }
 }
 
+#[allow(clippy::unnecessary_wraps)]
 fn simple_string(buf: &BytesMut, pos: usize) -> RedisResult {
     Ok(word(buf, pos).map(|(pos, word)| (pos, RedisBufSplit::String(word))))
 }
 
+#[allow(clippy::unnecessary_wraps)]
 fn error(buf: &BytesMut, pos: usize) -> RedisResult {
     Ok(word(buf, pos).map(|(pos, word)| (pos, RedisBufSplit::Error(word))))
 }
