@@ -1,8 +1,10 @@
-use bytes::{ Bytes, BytesMut};
 use memchr::memchr;
 use std::str;
 
 use crate::types::RedisValueRef;
+
+use bytes::{ Bytes, BytesMut};
+use tokio_util::codec::Decoder;
 
 #[derive(Debug)]
 pub enum RESPError {
@@ -13,6 +15,12 @@ pub enum RESPError {
     BadBulkStringSize(i64),
     BadArraySize(i64),
 }
+
+impl From<std::io::Error> for RESPError {
+    fn from(error: std::io::Error) -> Self {
+        RESPError::IOError(error)
+    }
+}
 enum RedisBufSplit {
     String(BufSplit),
     Error(BufSplit),
@@ -21,6 +29,9 @@ enum RedisBufSplit {
     NullArray,
     NullBulkString,
 }
+
+#[derive(Default)]
+pub struct RespParser;
 
 impl RedisBufSplit {
     fn redis_value(self, buf: &Bytes) -> RedisValueRef {
@@ -173,5 +184,24 @@ fn parse(buf: &BytesMut, pos: usize) -> RedisResult {
         b':' => resp_int(buf, pos + 1),
         b'*' => array(buf, pos + 1),
         _ => Err(RESPError::UnknownStartingByte),
+    }
+}
+
+impl Decoder for RespParser {
+    type Item = RedisValueRef;
+    type Error = RESPError;
+    fn decode(&mut self, buf: &mut BytesMut) -> Result<Option<Self::Item>, Self::Error> {
+        if buf.is_empty() {
+            return Ok(None);
+        }
+
+        match parse(buf, 0)? {
+            Some((pos, value)) => {
+                // We parsed a value! Shave off the bytes so tokio can continue filling the buffer.
+                let our_data = buf.split_to(pos);
+                Ok(Some(value.redis_value(&our_data.freeze())))
+            }
+            None => Ok(None),
+        }
     }
 }
