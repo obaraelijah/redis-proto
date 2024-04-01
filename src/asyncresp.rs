@@ -4,7 +4,7 @@ use std::str;
 use crate::types::RedisValueRef;
 
 use bytes::{ Bytes, BytesMut};
-use tokio_util::codec::Decoder;
+use tokio_util::codec::{Decoder, Encoder};
 
 #[derive(Debug)]
 pub enum RESPError {
@@ -204,4 +204,17 @@ impl Decoder for RespParser {
             None => Ok(None),
         }
     }
+}
+
+impl Encoder<RedisValueRef> for RespParser {
+    type Error = std::io::Error;
+
+    fn encode(&mut self, item: RedisValueRef, dst: &mut BytesMut) -> std::io::Result<()> {
+        write_redis_value(item, dst);
+        Ok(())
+    }
+}
+
+fn write_redis_value(item: RedisValueRef, dst: &mut BytesMut) {
+    unimplemented!( )
 }
