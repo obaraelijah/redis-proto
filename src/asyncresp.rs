@@ -263,3 +263,36 @@ fn write_redis_value(item: RedisValueRef, dst: &mut BytesMut) {
         RedisValueRef::NullArray => dst.extend_from_slice(NULL_ARRAY.as_bytes()),
     }
 }
+
+#[cfg(test)]
+mod resp_parser_tests {
+    use crate::asyncresp::RespParser;
+    use crate::types::{RedisValueRef, Value};
+    use bytes::{Bytes, BytesMut};
+    use tokio_util::codec::{Decoder, Encoder};
+    
+    fn generic_test(input: &'static str, output: RedisValueRef) {
+        let mut decoder = RespParser::default();
+        let result_read = decoder.decode(&mut BytesMut::from(input));
+
+        let mut encoder = RespParser::default();
+        let mut buf = BytesMut::new();
+        let result_write = encoder.encode(output.clone(), &mut buf);
+
+        assert!(
+            result_write.as_ref().is_ok(),
+            "{:?}",
+            result_write.unwrap_err()
+        );
+
+        assert_eq!(
+            input.as_bytes(), buf.as_ref()
+        );
+
+        assert!(
+            result_read.as_ref().is_ok(),
+            "{:?}",
+            result_read.unwrap_err()
+        );
+    }
+}
