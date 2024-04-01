@@ -1,6 +1,8 @@
-use bytes::{buf, Bytes, BytesMut};
+use bytes::{ Bytes, BytesMut};
 use memchr::memchr;
 use std::str;
+
+use crate::types::RedisValueRef;
 
 #[derive(Debug)]
 pub enum RESPError {
@@ -20,6 +22,22 @@ enum RedisBufSplit {
     NullBulkString,
 }
 
+impl RedisBufSplit {
+    fn redis_value(self, buf: &Bytes) -> RedisValueRef {
+        match self {
+            // bfs is BufSplit(start, end), which has the as_bytes 
+            RedisBufSplit::String(bfs) => RedisValueRef::String(bfs.as_bytes(buf)),
+            RedisBufSplit::Error(bfs) => RedisValueRef::Error(bfs.as_bytes(buf)),
+            RedisBufSplit::Array(arr) => {
+                RedisValueRef::Array(arr.into_iter().map(|bfs| bfs.redis_value(buf)).collect())
+            }
+            RedisBufSplit::NullArray => RedisValueRef::NullArray,
+            RedisBufSplit::NullBulkString => RedisValueRef::NullBulkString,
+            RedisBufSplit::Int(i) => RedisValueRef::Int(i),
+        }
+    }
+}
+
 type RedisResult = Result<Option<(usize, RedisBufSplit)>, RESPError>;
 
 struct BufSplit(usize, usize); //useful for creating a view into a larger byte slice without copying the data
@@ -31,6 +49,14 @@ impl BufSplit {
     #[inline]
     fn as_slice<'a>(&self, buf: &'a BytesMut) -> &'a [u8] {
         &buf[self.0..self.1]
+    }
+
+    /// Get a Bytes object representing the appropriate slice
+    /// of bytes.
+    ///
+    /// Constant time.
+    fn as_bytes(&self, buf: &Bytes) -> Bytes {
+        buf.slice(self.0..self.1)
     }
 }
 /// Get a word from `buf` starting at `pos`
