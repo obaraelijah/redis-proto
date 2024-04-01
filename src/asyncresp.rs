@@ -1,10 +1,10 @@
 use memchr::memchr;
-use std::str;
 use std::convert::From;
+use std::str;
 
 use crate::types::{RedisValueRef, NULL_ARRAY, NULL_BULK_STRING};
 
-use bytes::{ Bytes, BytesMut};
+use bytes::{Bytes, BytesMut};
 use tokio_util::codec::{Decoder, Encoder};
 
 #[derive(Debug)]
@@ -38,7 +38,7 @@ pub struct RespParser;
 impl RedisBufSplit {
     fn redis_value(self, buf: &Bytes) -> RedisValueRef {
         match self {
-            // bfs is BufSplit(start, end), which has the as_bytes 
+            // bfs is BufSplit(start, end), which has the as_bytes
             RedisBufSplit::String(bfs) => RedisValueRef::BulkString(bfs.as_bytes(buf)),
             RedisBufSplit::Error(bfs) => RedisValueRef::Error(bfs.as_bytes(buf)),
             RedisBufSplit::Array(arr) => {
