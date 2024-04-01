@@ -28,6 +28,7 @@ impl BufSplit {
     /// Get a lifetime appropriate slice of the underlying buffer.
     ///
     /// Constant time.
+    #[inline]
     fn as_slice<'a>(&self, buf: &'a BytesMut) -> &'a [u8] {
         &buf[self.0..self.1]
     }
@@ -62,6 +63,30 @@ fn int(buf: &BytesMut, pos: usize) -> Result<Option<(usize, i64)>, RESPError> {
             let i = s.parse().map_err(|_| RESPError::IntParseFailure)?;
             Ok(Some((pos, i)))
         }
+        None => Ok(None),
+    }
+}
+
+fn bulk_string(buf: &BytesMut, pos: usize) -> RedisResult {
+    // `pos` returned by `int` is the first index of the string content.
+    match int(buf, pos)? {
+        // special case: redis defines a NullBulkString type, with length of -1.
+        Some((pos, -1)) => Ok(Some((pos, RedisBufSplit::NullBulkString))),
+        Some((pos, size)) if size >= 0 => {
+            // We trust the client here, and directly calculate the end index of string (absolute w.r.t pos)
+            let total_size = pos + size as usize;
+            // The client hasn't sent us enough bytes
+            if buf.len() < total_size + 2 {
+                Ok(None)
+            } else {
+                let rs = RedisBufSplit::String(BufSplit(pos, total_size));
+                // total_size + 2 == ...bulkstring\r\n<HERE> -- after CLRF
+                Ok(Some((total_size + 2, rs)))
+            }
+        }
+        // We recieved a garbage size (size < -1), so error out
+        Some((_pos, bad_size)) => Err(RESPError::BadBulkStringSize(bad_size)),
+        // Not enough bytes to parse an int (i.e. no CLRF to delimit the int)
         None => Ok(None),
     }
 }
