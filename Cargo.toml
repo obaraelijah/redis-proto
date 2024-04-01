@@ -12,6 +12,9 @@ name = "redis-proto"
 path = "src/main.rs"
 
 [dependencies]
+tokio = { version = "1.15", features = ["full", "tracing"] }
+tokio-util = { version = "0.6.9", features = ["codec"] }
+bytes = { version = "1.0.0", features = ["serde"] }
 sloggers = "0.3.4"
 lazy_static = "1.4.0"
 slog = "2.5.2"
