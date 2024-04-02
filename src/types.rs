@@ -83,6 +83,8 @@ type KeySet =  DashMap<Key, HashSet<Value>>;
 pub struct StateStore {
     pub states: DashMap<Index, StateRef>,
     #[serde(skip)]
+    pub commands_threshold: u64,
+    #[serde(skip)]
     pub memory_only: bool
 }
 
