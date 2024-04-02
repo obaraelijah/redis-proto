@@ -1,5 +1,5 @@
 use redis_proto::logger::LOGGER;
-use redis_proto::startup::{Config, startup_message};
+use redis_proto::startup::{startup_message, Config};
 
 use slog::info;
 use structopt::StructOpt;

@@ -1,10 +1,10 @@
-use std::sync::Arc;
-use std::collections::HashSet;
 use bytes::Bytes;
 use dashmap::DashMap;
-use serde::{Deserialize, Serialize};
-use std::fs::File;
 use parking_lot::Mutex;
+use serde::{Deserialize, Serialize};
+use std::collections::HashSet;
+use std::fs::File;
+use std::sync::Arc;
 
 // These types are used by state and ops to actually perform useful work.
 pub type Value = Bytes;
@@ -75,7 +75,7 @@ pub const EMPTY_ARRAY: &str = "*0\r\n";
 /// Canonical type for key-value storage
 type KeyString = DashMap<Key, Value>;
 /// Canonical type for key-set storage
-type KeySet =  DashMap<Key, HashSet<Value>>;
+type KeySet = DashMap<Key, HashSet<Value>>;
 
 ///Top level database struct
 /// Holds all Stateref dbs, and will hand them out on request
@@ -85,7 +85,7 @@ pub struct StateStore {
     #[serde(skip)]
     pub commands_threshold: u64,
     #[serde(skip)]
-    pub memory_only: bool
+    pub memory_only: bool,
 }
 
 /// Reference type for `StateStore`
@@ -98,9 +98,9 @@ pub type StateRef = Arc<State>;
 /// The state stored by redis-proto. These fields are the ones
 /// used by the various datastructures files (keys.rs, etc)
 #[derive(Default, Serialize, Deserialize)]
-pub struct  State {
+pub struct State {
     #[serde(default)]
-    pub  kv: KeyString,
+    pub kv: KeyString,
     #[serde(default)]
     pub sets: KeySet,
 }

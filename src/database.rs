@@ -3,17 +3,16 @@ use crate::startup::Config;
 use crate::types::{Dumpfile, StateRef, StateStore, StateStoreRef};
 use directories::ProjectDirs;
 use parking_lot::Mutex;
+use rmp_serde as rmps;
 use rmps::config;
+use slog::{error, info};
 use std::error::Error;
 use std::fs::{File, OpenOptions};
-use std::io::{Seek,SeekFrom};
+use std::io::{Seek, SeekFrom};
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::{task, time::Interval};
-use rmp_serde as rmps;
-use slog::error;
-
 
 /// Convenience macro to panic with error messages.
 macro_rules! fatal_panic {
@@ -29,7 +28,6 @@ macro_rules! fatal_panic {
     }};
 }
 
-
 /// Dump the current state to the dump_file
 fn dump_state(state: StateStoreRef, dump_file: &mut File) -> Result<(), Box<dyn Error>> {
     dump_file.seek(SeekFrom::Start(0))?;
@@ -40,7 +38,7 @@ fn dump_state(state: StateStoreRef, dump_file: &mut File) -> Result<(), Box<dyn 
 }
 
 /// Load state from the dump_file
-fn load_state(dump_file: Dumpfile, config: &Config) -> Result<StateStoreRef, Box<dyn Error>> {
+pub fn load_state(dump_file: Dumpfile, config: &Config) -> Result<StateStoreRef, Box<dyn Error>> {
     let mut contents = dump_file.lock(); // to prevent concurent access
     if contents.metadata()?.len() == 0 {
         return Ok(Arc::new(StateStore::default()));
@@ -52,4 +50,56 @@ fn load_state(dump_file: Dumpfile, config: &Config) -> Result<StateStoreRef, Box
     state_store.memory_only = config.memory_only;
 
     Ok(Arc::new(state_store))
+}
+
+/// Make the data directory (directory where the dump file lives)
+fn make_data_dir(data_dir: &Path) {
+    match std::fs::create_dir_all(&data_dir) {
+        Ok(_) => {
+            info!(
+                LOGGER,
+                "Created config dir path {}",
+                data_dir.to_string_lossy()
+            );
+        }
+        Err(e) => {
+            let err_msg = format!(
+                "Error! Cannot create path {}, error {}",
+                data_dir.to_string_lossy(),
+                e,
+            );
+            fatal_panic!(err_msg);
+        }
+    }
+}
+
+fn default_data_dir() -> PathBuf {
+    let data_dir = ProjectDirs::from("", "sam", "redis-proto").expect("to fetch a default");
+    let mut p = PathBuf::new();
+    p.push(data_dir.data_dir());
+    p
+}
+
+pub fn get_dump_file(config: &Config) -> Dumpfile {
+    let data_dir = match &config.data_dir {
+        Some(dir) => dir.to_path_buf(),
+        None => default_data_dir(),
+    };
+    if !data_dir.exists() {
+        make_data_dir(&data_dir);
+    }
+
+    let dump_file = data_dir.join("dump.rodb");
+    info!(LOGGER, "Dump File Location: {:?}", dump_file);
+    let opened_file = match OpenOptions::new()
+        .read(true)
+        .write(true)
+        .create(true)
+        .append(false)
+        .open(dump_file)
+    {
+        Ok(f) => f,
+        Err(e) => fatal_panic!(format!("Failed to open dump file! {}", e)),
+    };
+    Arc::new(Mutex::new(opened_file))
 }

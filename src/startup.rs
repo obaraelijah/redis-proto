@@ -4,7 +4,6 @@ use structopt::StructOpt;
 use crate::logger::LOGGER;
 use std::path::PathBuf;
 
-
 #[derive(Debug, StructOpt)]
 #[structopt(
     name = "redis-proto",
@@ -30,7 +29,7 @@ pub fn startup_message(config: &Config) {
     if !config.dont_show_graphic {
         info!(
             LOGGER,
-        r#"
+            r#"
             _____               _   _                                  _           
             |  __ \             | | (_)                                | |          
             | |__) |   ___    __| |  _   ___     _ __    _ __    ___   | |_    ___  

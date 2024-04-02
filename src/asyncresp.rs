@@ -270,7 +270,7 @@ mod resp_parser_tests {
     use crate::types::{RedisValueRef, Value};
     use bytes::{Bytes, BytesMut};
     use tokio_util::codec::{Decoder, Encoder};
-    
+
     fn generic_test(input: &'static str, output: RedisValueRef) {
         let mut decoder = RespParser::default();
         let result_read = decoder.decode(&mut BytesMut::from(input));
@@ -285,9 +285,7 @@ mod resp_parser_tests {
             result_write.unwrap_err()
         );
 
-        assert_eq!(
-            input.as_bytes(), buf.as_ref()
-        );
+        assert_eq!(input.as_bytes(), buf.as_ref());
 
         assert!(
             result_read.as_ref().is_ok(),
@@ -441,5 +439,4 @@ mod resp_parser_tests {
         let s = "*-1\r\n";
         generic_test(s, t);
     }
-
 }
