@@ -295,4 +295,67 @@ mod resp_parser_tests {
             result_read.unwrap_err()
         );
     }
+
+    fn generic_test_arr(input: &str, output: Vec<RedisValueRef>) {
+        // TODO: Try to make this occur randomly
+        let first: usize = input.len() / 2;
+        let second = input.len() - first;
+        let mut first = BytesMut::from(&input[0..=first]);
+        let mut second = Some(BytesMut::from(&input[second..]));
+
+        let mut decoder = RespParser::default();
+        let mut res: Vec<RedisValueRef> = Vec::new();
+        loop {
+            match decoder.decode(&mut first) {
+                Ok(Some(value)) => {
+                    res.push(value.into());
+                    break;
+                }
+                Ok(None) => {
+                    if let None = second {
+                        panic!("Test expected more bytes than expected!");
+                    }
+                    first.extend(second.unwrap());
+                    second = None;
+                }
+                Err(e) => panic!("Should not error, {:?}", e),
+            }
+        }
+        if let Some(second) = second {
+            first.extend(second);
+        }
+        loop {
+            match decoder.decode(&mut first) {
+                Ok(Some(value)) => {
+                    res.push(value.into());
+                    break;
+                }
+                Err(e) => panic!("Should not error, {:?}", e),
+                _ => break,
+            }
+        }
+        assert_eq!(output, res);
+    }
+
+    fn ezs() -> Value {
+        Bytes::from_static(b"hello")
+    }
+
+    #[test]
+    fn test_parse_error() {
+        let t = RedisValueRef::Error(ezs());
+        let s = "-hello\r\n";
+        generic_test(s, t);
+
+        let t0 = RedisValueRef::Error(Bytes::from_static(b"abcdefghijklmnopqrstuvwxyz"));
+        let t1 = RedisValueRef::Error(ezs());
+        let s = "-abcdefghijklmnopqrstuvwxyz\r\n-hello\r\n";
+        generic_test_arr(s, vec![t0, t1]);
+    }
+
+    #[test]
+    fn test_bulk_string() {
+        unimplemented!()
+    }
+
 }
