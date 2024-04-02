@@ -126,6 +126,9 @@ pub fn save_state(state: StateStoreRef, dump_file: Dumpfile) {
     }
 }
 
+/// Save the current State to Dumpfile.
+///
+/// Panics if state fails to dump.
 pub async fn save_state_interval(state: StateStoreRef, dump_file: Dumpfile) {
     let mut interval = interval(Duration::from_millis(SAVE_STATE_PERIOD));
     loop {
