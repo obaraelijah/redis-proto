@@ -354,8 +354,92 @@ mod resp_parser_tests {
     }
 
     #[test]
-    fn test_bulk_string() {
-        unimplemented!()
+    fn test_parse_bulk_string() {
+        let t = RedisValueRef::BulkString(ezs());
+        let s = "$5\r\nhello\r\n";
+        generic_test(s, t);
+
+        let t = RedisValueRef::BulkString(Bytes::from_static(b""));
+        let s = "$0\r\n\r\n";
+        generic_test(s, t)
+    }
+
+    #[test]
+    fn test_parse_int() {
+        let t = RedisValueRef::Int(0);
+        let s = ":0\r\n";
+        generic_test(s, t);
+
+        let t = RedisValueRef::Int(123);
+        let s = ":123\r\n";
+        generic_test(s, t);
+
+        let t = RedisValueRef::Int(-123);
+        let s = ":-123\r\n";
+        generic_test(s, t);
+    }
+
+    #[test]
+    fn test_parse_array() {
+        let t = RedisValueRef::Array(vec![]);
+        let s = "*0\r\n";
+        generic_test(s, t);
+
+        let inner = vec![
+            RedisValueRef::BulkString(Bytes::from_static(b"foo")),
+            RedisValueRef::BulkString(Bytes::from_static(b"bar")),
+        ];
+        let t = RedisValueRef::Array(inner);
+        let s = "*2\r\n$3\r\nfoo\r\n$3\r\nbar\r\n";
+        generic_test(s, t);
+
+        let inner = vec![
+            RedisValueRef::Int(1),
+            RedisValueRef::Int(2),
+            RedisValueRef::Int(3),
+        ];
+        let t = RedisValueRef::Array(inner);
+        let s = "*3\r\n:1\r\n:2\r\n:3\r\n";
+        generic_test(s, t);
+
+        let inner = vec![
+            RedisValueRef::Int(1),
+            RedisValueRef::Int(2),
+            RedisValueRef::Int(3),
+            RedisValueRef::Int(4),
+            RedisValueRef::BulkString(Bytes::from_static(b"foobar")),
+        ];
+        let t = RedisValueRef::Array(inner);
+        let s = "*5\r\n:1\r\n:2\r\n:3\r\n:4\r\n$6\r\nfoobar\r\n";
+        generic_test(s, t);
+
+        let inner = vec![
+            RedisValueRef::Array(vec![
+                RedisValueRef::Int(1),
+                RedisValueRef::Int(2),
+                RedisValueRef::Int(3),
+            ]),
+            RedisValueRef::Array(vec![
+                RedisValueRef::BulkString(Bytes::from_static(b"Foo")),
+                RedisValueRef::Error(Bytes::from_static(b"Bar")),
+            ]),
+        ];
+        let t = RedisValueRef::Array(inner);
+        let s = "*2\r\n*3\r\n:1\r\n:2\r\n:3\r\n*2\r\n$3\r\nFoo\r\n-Bar\r\n";
+        generic_test(s, t);
+
+        let inner = vec![
+            RedisValueRef::BulkString(Bytes::from_static(b"foo")),
+            RedisValueRef::NullBulkString,
+            RedisValueRef::BulkString(Bytes::from_static(b"bar")),
+        ];
+        let t = RedisValueRef::Array(inner);
+        let s = "*3\r\n$3\r\nfoo\r\n$-1\r\n$3\r\nbar\r\n";
+        generic_test(s, t);
+
+        let t = RedisValueRef::NullArray;
+        let s = "*-1\r\n";
+        generic_test(s, t);
     }
 
 }
