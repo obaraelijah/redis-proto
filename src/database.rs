@@ -14,7 +14,7 @@ use std::sync::Arc;
 use std::time::Duration;
 use tokio::{task, time::interval};
 
-const SAVE_STATE_PERIOD_SEC: u64 = 60; 
+const SAVE_STATE_PERIOD_SEC: u64 = 60;
 const SAVE_STATE_PERIOD: u64 = SAVE_STATE_PERIOD_SEC * 1000;
 
 /// Convenience macro to panic with error messages.
