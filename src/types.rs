@@ -4,6 +4,7 @@ use parking_lot::Mutex;
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 use std::fs::File;
+use std::sync::atomic::AtomicU64;
 use std::sync::Arc;
 
 // These types are used by state and ops to actually perform useful work.
@@ -84,6 +85,8 @@ pub struct StateStore {
     pub states: DashMap<Index, StateRef>,
     #[serde(skip)]
     pub commands_threshold: u64,
+    #[serde(skip)]
+    pub commands_ran_since_save: AtomicU64,
     #[serde(skip)]
     pub memory_only: bool,
 }

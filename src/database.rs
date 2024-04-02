@@ -1,18 +1,21 @@
 use crate::logger::LOGGER;
 use crate::startup::Config;
-use crate::types::{Dumpfile, StateRef, StateStore, StateStoreRef};
+use crate::types::{Dumpfile, StateStore, StateStoreRef};
 use directories::ProjectDirs;
 use parking_lot::Mutex;
 use rmp_serde as rmps;
-use rmps::config;
-use slog::{error, info};
+use slog::{debug, error, info};
 use std::error::Error;
 use std::fs::{File, OpenOptions};
 use std::io::{Seek, SeekFrom};
 use std::path::{Path, PathBuf};
+use std::sync::atomic::Ordering;
 use std::sync::Arc;
 use std::time::Duration;
-use tokio::{task, time::Interval};
+use tokio::{task, time::interval};
+
+const SAVE_STATE_PERIOD_SEC: u64 = 60; 
+const SAVE_STATE_PERIOD: u64 = SAVE_STATE_PERIOD_SEC * 1000;
 
 /// Convenience macro to panic with error messages.
 macro_rules! fatal_panic {
@@ -101,5 +104,36 @@ pub fn get_dump_file(config: &Config) -> Dumpfile {
         Ok(f) => f,
         Err(e) => fatal_panic!(format!("Failed to open dump file! {}", e)),
     };
+    // TODO: Use tokio locks here
     Arc::new(Mutex::new(opened_file))
+}
+
+pub fn save_state(state: StateStoreRef, dump_file: Dumpfile) {
+    info!(
+        LOGGER,
+        "Saving state ({}s or >={} ops ran)...", SAVE_STATE_PERIOD_SEC, state.commands_threshold
+    );
+    match dump_file.try_lock() {
+        Some(mut file) => {
+            if let Err(e) = task::block_in_place(|| dump_state(state, &mut file)) {
+                fatal_panic!("FAILED TO DUMP STATE!", e.to_string());
+            }
+        }
+        None => debug!(
+            LOGGER,
+            "Failed to save state! Someone else is currently writing..."
+        ),
+    }
+}
+
+pub async fn save_state_interval(state: StateStoreRef, dump_file: Dumpfile) {
+    let mut interval = interval(Duration::from_millis(SAVE_STATE_PERIOD));
+    loop {
+        interval.tick().await;
+        let commands_ran_since_save = state.commands_ran_since_save.load(Ordering::SeqCst);
+        if commands_ran_since_save != 0 {
+            state.commands_ran_since_save.store(0, Ordering::SeqCst);
+            save_state(state.clone(), dump_file.clone());
+        }
+    }
 }
