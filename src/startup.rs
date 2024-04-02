@@ -17,15 +17,6 @@ pub struct Config {
     /// Don't show the starting graphic
     #[structopt(short = "g", long = "no-graphic")]
     pub dont_show_graphic: bool,
-    #[structopt(short = "s", long = "ops-until-save", default_value = "10000")]
-    pub ops_until_save: u64,
-    #[structopt(short = "p", long = "port", default_value = "6379")]
-    pub port: u64,
-    /// Run in memory only mode. Don't save database state to disk
-    #[structopt(short = "m", long = "memory-only")]
-    pub memory_only: bool,
-    #[structopt(short = "f", long = "scripts-dir")]
-    pub scripts_dir: Option<PathBuf>,
 }
 
 pub fn startup_message(config: &Config) {
