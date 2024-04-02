@@ -1,6 +1,6 @@
+use redis_proto::database::{get_dump_file, load_state, save_state_interval};
 use redis_proto::logger::LOGGER;
 use redis_proto::startup::{startup_message, Config};
-use redis_proto::database::{get_dump_file, load_state, save_state_interval};
 
 use slog::{info, warn};
 use structopt::StructOpt;
