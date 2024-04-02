@@ -19,8 +19,10 @@ structopt = "0.3.5"
 sloggers = "0.3.4"
 lazy_static = "1.4.0"
 slog = "2.5.2"
+dashmap = { version = "4.0.2", features = ["serde"] }
 memchr = "2.3.0"
+serde = { version = "1.0.188", features = ["derive", "rc"] }
+parking_lot = { version = "0.9.0", features = ["serde"] }
 
 [dev-dependencies]
 pretty_assertions = "0.6.1"
-proptest = "0.9.4"
