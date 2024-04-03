@@ -68,3 +68,55 @@ pub async fn key_interact(key_op: KeyOps, state: StateRef) -> ReturnValue {
         }
     }   
 }
+
+#[cfg(test)]
+mod test_keys {
+    use crate::keys::{key_interact, KeyOps};
+    use crate::types::{State, ReturnValue};
+    use bytes::Bytes;
+    use smallvec::smallvec;
+    use std::sync::Arc;
+
+    #[tokio::test]
+    async fn test_get() {
+        let v = Bytes::from_static(b"hello");
+        let eng = Arc::new(State::default());
+
+        assert_eq!(
+            ReturnValue::Nil,
+            key_interact(KeyOps::Get(v.clone()), eng.clone()).await
+        );
+        key_interact(KeyOps::Set(v.clone(), v.clone()), eng.clone()).await;
+        assert_eq!(
+            ReturnValue::StringRes(v.clone()),
+            key_interact(KeyOps::Get(v.clone()), eng.clone()).await
+        );
+    }
+
+    #[tokio::test]
+    async fn test_set() {
+        let (l, r) = (Bytes::from_static(b"l"), Bytes::from_static(b"r"));
+        let eng = Arc::new(State::default());
+        key_interact(KeyOps::Set(l.clone(), r.clone()), eng.clone()).await;
+        assert_eq!(
+            ReturnValue::StringRes(r.clone()),
+            key_interact(KeyOps::Get(l.clone()), eng.clone()).await
+        );
+    }
+
+    #[tokio::test]
+    async fn test_del() {
+        let (l, unused) = (Bytes::from_static(b"l"), Bytes::from_static(b"r"));
+        let eng = Arc::new(State::default());
+        key_interact(KeyOps::Set(l.clone(), l.clone()), eng.clone()).await;
+
+        assert_eq!(
+            ReturnValue::IntRes(1),
+            key_interact(KeyOps::Del(smallvec![l.clone()]), eng.clone()).await
+        );
+        assert_eq!(
+            ReturnValue::IntRes(0),
+            key_interact(KeyOps::Del(smallvec![unused]), eng.clone()).await
+        );
+    }
+}
