@@ -1,6 +1,6 @@
 #[macro_export]
 /// Reader Macro
-/// Use this to easily write into a given datastructure in State.
+/// Use this to easily reading data from a given data structure in a state object.
 macro_rules! make_reader {
     ($id:ident, $name:ident) => {
         macro_rules! $name {
