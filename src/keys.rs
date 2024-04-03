@@ -119,4 +119,20 @@ mod test_keys {
             key_interact(KeyOps::Del(smallvec![unused]), eng.clone()).await
         );
     }
+
+    #[tokio::test]
+    async fn test_rename() {
+        let (old, v, new) = (
+            Bytes::from_static(b"old"),
+            Bytes::from_static(b"v"),
+            Bytes::from_static(b"new"),
+        );
+        let eng = Arc::new(State::default());
+        key_interact(KeyOps::Set(old.clone(), v.clone()), eng.clone()).await;
+        key_interact(KeyOps::Rename(old.clone(), new.clone()), eng.clone()).await;
+        assert_eq!(
+            ReturnValue::StringRes(v.clone()),
+            key_interact(KeyOps::Get(new), eng.clone()).await
+        );
+    }
 }
