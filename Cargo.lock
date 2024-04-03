@@ -695,6 +695,7 @@ dependencies = [
  "serde",
  "slog",
  "sloggers",
+ "smallvec 1.13.2",
  "structopt",
  "tokio",
  "tokio-util",

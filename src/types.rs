@@ -74,6 +74,9 @@ pub const NULL_BULK_STRING: &str = "$-1\r\n";
 pub const NULL_ARRAY: &str = "*-1\r\n";
 pub const EMPTY_ARRAY: &str = "*0\r\n";
 
+// Redis Vector
+use crate::ops::RVec;
+
 /// Convenience type for returns value. Maps directly to RedisValues.
 #[derive(Debug, PartialEq, Clone)]
 pub enum ReturnValue {
@@ -91,6 +94,31 @@ pub enum ReturnValue {
 impl From<Count> for ReturnValue {
     fn from(int: Count) -> Self {
         ReturnValue::IntRes(int)
+    }
+}
+
+impl From<RVec<Value>> for ReturnValue {
+    fn from(vals: RVec<Value>) -> ReturnValue {
+        ReturnValue::Array(vals.into_iter().map(ReturnValue::StringRes).collect())
+    }
+}
+
+impl From<Vec<String>> for ReturnValue {
+    fn from(strings: Vec<String>) -> ReturnValue {
+        let strings_to_bytes: Vec<Bytes> = strings
+            .into_iter()
+            .map(|s| s.as_bytes().to_vec().into())
+            .collect();
+        ReturnValue::MultiStringRes(strings_to_bytes)
+    }
+}
+
+impl ReturnValue {
+    pub fn is_error(&self) -> bool {
+        if let ReturnValue::Error(_) = *self {
+            return true;
+        }
+        false
     }
 }
 
@@ -127,4 +155,23 @@ pub struct State {
     pub kv: KeyString,
     #[serde(default)]
     pub sets: KeySet,
+}
+
+impl From<ReturnValue> for RedisValueRef {
+    fn from(stat_ref: ReturnValue) -> Self {
+        match stat_ref {
+            ReturnValue::Ok => RedisValueRef::SimpleString(Bytes::from_static(b"OK")),
+            ReturnValue::Nil => RedisValueRef::NullBulkString,
+            ReturnValue::StringRes(s) => RedisValueRef::BulkString(s),
+            ReturnValue::MultiStringRes(ms) => {
+                RedisValueRef::Array(ms.into_iter().map(RedisValueRef::BulkString).collect())
+            }
+            ReturnValue::IntRes(i) => RedisValueRef::Int(i as i64),
+            ReturnValue::Error(e) => RedisValueRef::Error(Bytes::from_static(e)),
+            ReturnValue::Array(a) => {
+                RedisValueRef::Array(a.into_iter().map(RedisValueRef::from).collect())
+            } 
+            ReturnValue::Ident(r) => r,
+        }
+    }
 }
