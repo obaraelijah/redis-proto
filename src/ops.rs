@@ -1,4 +1,4 @@
-use crate::types::{RedisValueRef, ReturnValue, StateRef, Value};
+use crate::types::{RedisValueRef, ReturnValue, StateRef, Value, Count};
 use crate::keys::{KeyOps, key_interact};
 
 use std::convert::TryFrom;
@@ -77,6 +77,33 @@ impl TryFrom<&RedisValueRef> for Bytes {
             RedisValueRef::BulkString(r) => Ok(r.clone()),
             _ => Err(OpsError::InvalidType),
         }
+    }
+}
+
+impl TryFrom<RedisValueRef> for String {
+    type Error = OpsError;
+
+    fn try_from(r: RedisValueRef) -> Result<String, Self::Error> {
+        match r {
+            RedisValueRef::BulkString(s) => Ok(String::from_utf8_lossy(&s).to_string()),
+            _ => Err(OpsError::InvalidType),
+        }
+    }
+}
+
+impl TryFrom<&RedisValueRef> for String {
+    type Error = OpsError;
+
+    fn try_from(r: &RedisValueRef) -> Result<String, Self::Error> {
+        String::try_from(r.clone())
+    }
+}
+
+impl TryFrom<&RedisValueRef> for Count {
+    type Error = OpsError;
+
+    fn try_from(r: &RedisValueRef) -> Result<Count, Self::Error> {
+       unimplemented!()
     }
 }
 
