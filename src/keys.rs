@@ -8,7 +8,9 @@ op_variants! {
     MSet(RVec<(Key, Value)>),
     Get(Key),
     MGet(RVec<Key>),
-    Del(RVec<Key>)
+    Del(RVec<Key>),
+    Rename(Key, Key),
+    RenameNx(Key, Key)
 }
 
 pub async fn key_interact(key_op: KeyOps, state: StateRef) -> ReturnValue {
@@ -44,6 +46,25 @@ pub async fn key_interact(key_op: KeyOps, state: StateRef) -> ReturnValue {
                 .filter(Option::is_some)
                 .count();
             ReturnValue::IntRes(deleted as Count)
+        }
+        KeyOps::Rename(key, new_key) => match state.kv.remove(&key) {
+            Some((_, value)) => {
+                state.kv.insert(new_key, value);
+                ReturnValue::Ok
+            }
+            None => ReturnValue::Error(b"no such key"),
+        },
+        KeyOps::RenameNx(key,new_key) => {
+            if state.kv.contains_key(&new_key) {
+                return ReturnValue::IntRes(0);
+            }
+            match state.kv.remove(&key) {
+                Some((_, value)) => {
+                    state.kv.insert(new_key, value);
+                    ReturnValue::IntRes(1)
+                }
+                None => ReturnValue::Error(b"no such key"),
+            }
         }
     }   
 }
