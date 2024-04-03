@@ -29,7 +29,7 @@ pub fn startup_message(config: &Config) {
     if !config.dont_show_graphic {
         info!(
             LOGGER,
-        r#"
+            r#"
  ___               _              ___                _          
  |  _`\            ( ) _          (  _`\             ( )_        
  | (_) )   __     _| |(_)  ___    | |_) ) _ __   _   | ,_)   _   

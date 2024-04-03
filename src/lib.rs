@@ -1,11 +1,15 @@
 #![forbid(unsafe_code)]
 #![warn(clippy::all)]
 
+#[macro_use]
+extern crate lazy_static;
+
 pub mod asyncresp;
 pub mod database;
 pub mod logger;
+pub mod ops;
 pub mod startup;
 pub mod types;
-pub mod ops;
 #[macro_use]
 pub mod macros;
+pub mod keys;

@@ -3,6 +3,7 @@ use dashmap::DashMap;
 use parking_lot::Mutex;
 use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
+use std::convert::From;
 use std::fs::File;
 use std::sync::atomic::AtomicU64;
 use std::sync::Arc;
@@ -72,6 +73,26 @@ impl std::fmt::Debug for RedisValueRef {
 pub const NULL_BULK_STRING: &str = "$-1\r\n";
 pub const NULL_ARRAY: &str = "*-1\r\n";
 pub const EMPTY_ARRAY: &str = "*0\r\n";
+
+/// Convenience type for returns value. Maps directly to RedisValues.
+#[derive(Debug, PartialEq, Clone)]
+pub enum ReturnValue {
+    Ok,
+    StringRes(Value),
+    Error(&'static [u8]),
+    MultiStringRes(Vec<Value>),
+    Array(Vec<ReturnValue>),
+    IntRes(i64),
+    Nil,
+    Ident(RedisValueRef),
+}
+
+/// Convenience trait to convert Count to ReturnValue.
+impl From<Count> for ReturnValue {
+    fn from(int: Count) -> Self {
+        ReturnValue::IntRes(int)
+    }
+}
 
 /// Canonical type for key-value storage
 type KeyString = DashMap<Key, Value>;
