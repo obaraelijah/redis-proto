@@ -1,5 +1,5 @@
-use crate::types::{RedisValueRef, ReturnValue, StateRef, Value, Count};
-use crate::keys::{KeyOps, key_interact};
+use crate::keys::{key_interact, KeyOps};
+use crate::types::{Count, RedisValueRef, ReturnValue, StateRef, Value};
 
 use std::convert::TryFrom;
 
@@ -103,7 +103,7 @@ impl TryFrom<&RedisValueRef> for Count {
     type Error = OpsError;
 
     fn try_from(r: &RedisValueRef) -> Result<Count, Self::Error> {
-       unimplemented!()
+        unimplemented!()
     }
 }
 

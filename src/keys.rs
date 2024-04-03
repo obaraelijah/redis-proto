@@ -1,6 +1,6 @@
 use crate::op_variants;
-use crate::types::{Key, Value, ReturnValue, StateRef, Count};
 use crate::ops::RVec;
+use crate::types::{Count, Key, ReturnValue, StateRef, Value};
 
 op_variants! {
     KeyOps,
@@ -54,7 +54,7 @@ pub async fn key_interact(key_op: KeyOps, state: StateRef) -> ReturnValue {
             }
             None => ReturnValue::Error(b"no such key"),
         },
-        KeyOps::RenameNx(key,new_key) => {
+        KeyOps::RenameNx(key, new_key) => {
             if state.kv.contains_key(&new_key) {
                 return ReturnValue::IntRes(0);
             }
@@ -66,13 +66,13 @@ pub async fn key_interact(key_op: KeyOps, state: StateRef) -> ReturnValue {
                 None => ReturnValue::Error(b"no such key"),
             }
         }
-    }   
+    }
 }
 
 #[cfg(test)]
 mod test_keys {
     use crate::keys::{key_interact, KeyOps};
-    use crate::types::{State, ReturnValue};
+    use crate::types::{ReturnValue, State};
     use bytes::Bytes;
     use smallvec::smallvec;
     use std::sync::Arc;
