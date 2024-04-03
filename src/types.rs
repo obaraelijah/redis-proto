@@ -97,12 +97,14 @@ impl From<Count> for ReturnValue {
     }
 }
 
+/// Convenience trait to convert ReturnValues to ReturnValue.
 impl From<RVec<Value>> for ReturnValue {
     fn from(vals: RVec<Value>) -> ReturnValue {
         ReturnValue::Array(vals.into_iter().map(ReturnValue::StringRes).collect())
     }
 }
 
+/// Convenience trait to convert ReturnValues to ReturnValue.
 impl From<Vec<String>> for ReturnValue {
     fn from(strings: Vec<String>) -> ReturnValue {
         let strings_to_bytes: Vec<Bytes> = strings
@@ -113,6 +115,7 @@ impl From<Vec<String>> for ReturnValue {
     }
 }
 
+/// Convenience method to determine an error. Used in testing.
 impl ReturnValue {
     pub fn is_error(&self) -> bool {
         if let ReturnValue::Error(_) = *self {
@@ -157,6 +160,7 @@ pub struct State {
     pub sets: KeySet,
 }
 
+/// Mapping of a ReturnValue to a RedisValueRef.
 impl From<ReturnValue> for RedisValueRef {
     fn from(stat_ref: ReturnValue) -> Self {
         match stat_ref {
@@ -170,7 +174,7 @@ impl From<ReturnValue> for RedisValueRef {
             ReturnValue::Error(e) => RedisValueRef::Error(Bytes::from_static(e)),
             ReturnValue::Array(a) => {
                 RedisValueRef::Array(a.into_iter().map(RedisValueRef::from).collect())
-            } 
+            }
             ReturnValue::Ident(r) => r,
         }
     }
