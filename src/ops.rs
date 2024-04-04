@@ -2,6 +2,7 @@ use crate::keys::{key_interact, KeyOps};
 use crate::types::{Count, RedisValueRef, ReturnValue, StateRef, Value};
 
 use std::convert::TryFrom;
+use std::io::Read;
 
 #[derive(Debug, Clone)]
 pub enum Ops {
@@ -103,9 +104,18 @@ impl TryFrom<&RedisValueRef> for Count {
     type Error = OpsError;
 
     fn try_from(r: &RedisValueRef) -> Result<Count, Self::Error> {
-        unimplemented!()
+        match r {
+            RedisValueRef::Int(e) => Ok(*e as Count),
+            // TODO: Not copy here
+            RedisValueRef::BulkString(s) => match String::from_utf8(s.to_owned().to_vec()) {
+                Ok(s) => s.parse().map_err(|_| OpsError::InvalidType),
+                Err(_) => Err(OpsError::InvalidType),
+            },
+            _ => Err(OpsError::InvalidType),
+        }
     }
 }
+
 
 use bytes::Bytes;
 use smallvec::SmallVec;
