@@ -115,7 +115,6 @@ impl TryFrom<&RedisValueRef> for Count {
     }
 }
 
-
 use bytes::Bytes;
 use smallvec::SmallVec;
 const DEFAULT_SMALL_VEC_SIZE: usize = 2;
