@@ -6,7 +6,11 @@ use crate::types::{Count, Key, ReturnValue, StateRef, Value};
 
 op_variants! {
     SetOps,
-    SAdd(Key, RVec<Value>)
+    SAdd(Key, RVec<Value>),
+    SMembers(Key),
+    SCard(Key),
+    SRem(Key, RVec<Value>),
+    SDiff(RVec<Value>)
 }
 
 pub enum SetAction {
@@ -51,4 +55,34 @@ fn many_set_op(state: &StateRef, keys: RVec<Key>, op: SetAction) -> Option<HashS
         }
     }
     Some(head)
+}
+
+pub async fn set_interact(set_op: SetOps, state: StateRef) -> ReturnValue {
+    match set_op {
+        SetOps::SAdd(set_key, vals) => {
+            let mut set = state.sets.entry(set_key).or_default();
+            vals.into_iter()
+                .fold(0, |acc, val| acc + set.insert(val) as Count)
+                .into()
+        }
+        SetOps::SMembers(set_key) => read_sets!(state, &set_key)
+            .map(|set| set.iter().cloned().collect())
+            .unwrap_or_else(RVec::new)
+            .into(),
+        SetOps::SCard(set_key) => read_sets!(state, &set_key)
+            .map(|set| set.len() as Count)
+            .unwrap_or(0)
+            .into(),
+        SetOps::SRem(set_key, vals) => write_sets!(state, &set_key)
+            .map(|mut set| {
+                vals.into_iter()
+                    .fold(0, |acc, val| acc + set.insert(val) as Count)
+            })
+            .unwrap_or(0)
+            .into(),
+        SetOps::SDiff(keys) => many_set_op(&state, keys, SetAction::Diff)
+            .map(|set| set.into_iter().collect())
+            .unwrap_or_else(RVec::new)
+            .into(),
+    }
 }
