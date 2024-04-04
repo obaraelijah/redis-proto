@@ -1,4 +1,5 @@
 use bytes::Bytes;
+use dashmap::lock::RwLock;
 use dashmap::DashMap;
 use parking_lot::Mutex;
 use serde::{Deserialize, Serialize};
@@ -16,6 +17,8 @@ pub type Key = Bytes;
 pub type Count = i64;
 /// Index is used to reprcent indices in structures
 pub type Index = i64;
+/// Score is used in sorted sets
+pub type Score = i64;
 
 /// DumpTimeoutUnitpe alias.
 pub type Dumpfile = Arc<Mutex<File>>;
@@ -141,6 +144,8 @@ pub struct StateStore {
     pub commands_ran_since_save: AtomicU64,
     #[serde(skip)]
     pub memory_only: bool,
+    #[serde(skip)]
+    pub foreign_functions: RwLock<HashSet<String>>,
 }
 
 /// Reference type for `StateStore`

@@ -2,7 +2,6 @@ use crate::keys::{key_interact, KeyOps};
 use crate::types::{Count, RedisValueRef, ReturnValue, StateRef, Value};
 
 use std::convert::TryFrom;
-use std::io::Read;
 
 #[derive(Debug, Clone)]
 pub enum Ops {
