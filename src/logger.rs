@@ -1,3 +1,7 @@
+//! Logging
+//!
+//! `logging` sets up  logging.
+
 use lazy_static::lazy_static;
 use slog::Logger;
 use sloggers::terminal::{Destination, TerminalLoggerBuilder};
