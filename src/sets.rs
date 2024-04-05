@@ -15,7 +15,10 @@ op_variants! {
     SUnion(RVec<Value>),
     SUnionStore(Key, RVec<Value>),
     SInter(RVec<Value>),
-    SInterStore(Key, RVec<Value>)
+    SInterStore(Key, RVec<Value>),
+    SPop(Key, Option<Count>),
+    SIsMember(Key, Value),
+    SMove(Key, Key, Value)
 }
 
 pub enum SetAction {
@@ -121,5 +124,49 @@ pub async fn set_interact(set_op: SetOps, state: StateRef) -> ReturnValue {
             }
             None => ReturnValue::IntRes(0),
         },
+        // There's some surprising complexity behind this command
+        SetOps::SPop(key, count) => {
+            let mut set = match state.sets.get_mut(&key) {
+                Some(s) => s,
+                None => return ReturnValue::Nil,
+            };
+            if set.is_empty() && count.is_some() {
+                return ReturnValue::MultiStringRes(vec![]);
+            } else if set.is_empty() {
+                return ReturnValue::Nil;
+            }
+            let count = count.unwrap_or(1);
+            if count < 0 {
+                return ReturnValue::Error(b"Count cannot be less than 0!");
+            }
+            let eles: Vec<Value> = set.iter().take(count as usize).cloned().collect();
+            for ele in eles.iter() {
+                set.remove(ele);
+            }
+            ReturnValue::MultiStringRes(eles)
+        },
+        SetOps::SIsMember(key, member) => match read_sets!(state, &key) {
+            Some(set) => match set.get(&member) {
+                Some(_) => ReturnValue::IntRes(1),
+                None => ReturnValue::IntRes(0),
+            },
+            None => ReturnValue::IntRes(0),
+        },
+        SetOps::SMove(src, dest, member) => {
+            let  sets = read_sets!(state);
+            if !sets.contains_key(&src) || !sets.contains_key(&dest) {
+                return ReturnValue::IntRes(0);
+            }
+
+            // TODO: Why are we allowed to unwrap here? It may not be alive at this time.
+            let mut src_set = state.sets.get_mut(&src).unwrap();
+            match src_set.take(&member) {
+                Some(res) => {
+                    sets.get_mut(&dest).unwrap().insert(res);
+                    ReturnValue::IntRes(1)
+                }
+                None => ReturnValue::IntRes(0),
+            }
+        }
     }
 }
