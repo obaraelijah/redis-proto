@@ -1,13 +1,15 @@
 use bytes::Bytes;
-use dashmap::lock::RwLock;
 use dashmap::DashMap;
-use parking_lot::Mutex;
 use serde::{Deserialize, Serialize};
-use std::collections::HashSet;
+/// Common Types in the project.
+use std::collections::{HashSet, VecDeque};
 use std::convert::From;
-use std::fs::File;
 use std::sync::atomic::AtomicU64;
 use std::sync::Arc;
+
+use parking_lot::{Mutex, RwLock};
+use std::fs::File;
+
 
 // These types are used by state and ops to actually perform useful work.
 pub type Value = Bytes;
@@ -132,6 +134,8 @@ impl ReturnValue {
 type KeyString = DashMap<Key, Value>;
 /// Canonical type for key-set storage
 type KeySet = DashMap<Key, HashSet<Value>>;
+/// Canonical type for Key-List storage.
+type KeyList = DashMap<Key, VecDeque<Value>>;
 
 ///Top level database struct
 /// Holds all Stateref dbs, and will hand them out on request
@@ -163,6 +167,8 @@ pub struct State {
     pub kv: KeyString,
     #[serde(default)]
     pub sets: KeySet,
+    #[serde(default)]
+    pub lists: KeyList,
 }
 
 /// Mapping of a ReturnValue to a RedisValueRef.
