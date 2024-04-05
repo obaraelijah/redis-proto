@@ -10,7 +10,12 @@ op_variants! {
     SMembers(Key),
     SCard(Key),
     SRem(Key, RVec<Value>),
-    SDiff(RVec<Value>)
+    SDiff(RVec<Value>),
+    SDiffStore(Key, RVec<Value>),
+    SUnion(RVec<Value>),
+    SUnionStore(Key, RVec<Value>),
+    SInter(RVec<Value>),
+    SInterStore(Key, RVec<Value>)
 }
 
 pub enum SetAction {
@@ -84,5 +89,37 @@ pub async fn set_interact(set_op: SetOps, state: StateRef) -> ReturnValue {
             .map(|set| set.into_iter().collect())
             .unwrap_or_else(RVec::new)
             .into(),
+        SetOps::SUnion(keys) => many_set_op(&state, keys, SetAction::Union)
+            .map(|set| set.into_iter().collect())
+            .unwrap_or_else(RVec::new)
+            .into(),
+        SetOps::SInter(keys) => many_set_op(&state, keys, SetAction::Inter)
+            .map(|set| set.into_iter().collect())
+            .unwrap_or_else(RVec::new)
+            .into(),
+        SetOps::SDiffStore(to_store, keys) => match many_set_op(&state, keys, SetAction::Diff) {
+            Some(hash_set) => {
+                let hash_set_size = hash_set.len();
+                write_sets!(state).insert(to_store, hash_set);
+                ReturnValue::IntRes(hash_set_size as Count)
+            }
+            None => ReturnValue::IntRes(0),
+        },
+        SetOps::SUnionStore(to_store, keys) => match many_set_op(&state, keys, SetAction::Union) {
+            Some(hash_set) => {
+                let hash_set_size = hash_set.len();
+                write_sets!(state).insert(to_store, hash_set);
+                ReturnValue::IntRes(hash_set_size as Count)
+            }
+            None => ReturnValue::IntRes(0),
+        },
+        SetOps::SInterStore(to_store, keys) => match many_set_op(&state, keys, SetAction::Inter) {
+            Some(hash_set) => {
+                let hash_set_size = hash_set.len();
+                write_sets!(state).insert(to_store, hash_set);
+                ReturnValue::IntRes(hash_set_size as Count)
+            }
+            None => ReturnValue::IntRes(0),
+        },
     }
 }
