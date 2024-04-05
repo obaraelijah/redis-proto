@@ -18,7 +18,8 @@ op_variants! {
     SInterStore(Key, RVec<Value>),
     SPop(Key, Option<Count>),
     SIsMember(Key, Value),
-    SMove(Key, Key, Value)
+    SMove(Key, Key, Value),
+    SRandMembers(Key, Option<Count>)
 }
 
 pub enum SetAction {
@@ -144,7 +145,7 @@ pub async fn set_interact(set_op: SetOps, state: StateRef) -> ReturnValue {
                 set.remove(ele);
             }
             ReturnValue::MultiStringRes(eles)
-        },
+        }
         SetOps::SIsMember(key, member) => match read_sets!(state, &key) {
             Some(set) => match set.get(&member) {
                 Some(_) => ReturnValue::IntRes(1),
@@ -153,7 +154,7 @@ pub async fn set_interact(set_op: SetOps, state: StateRef) -> ReturnValue {
             None => ReturnValue::IntRes(0),
         },
         SetOps::SMove(src, dest, member) => {
-            let  sets = read_sets!(state);
+            let sets = read_sets!(state);
             if !sets.contains_key(&src) || !sets.contains_key(&dest) {
                 return ReturnValue::IntRes(0);
             }
@@ -168,5 +169,17 @@ pub async fn set_interact(set_op: SetOps, state: StateRef) -> ReturnValue {
                 None => ReturnValue::IntRes(0),
             }
         }
+        SetOps::SRandMembers(key, count) => match read_sets!(state, &key) {
+            Some(set) => {
+                let count = count.unwrap_or(1);
+                if count < 0 {
+                    return ReturnValue::MultiStringRes(
+                        set.iter().cycle().take(-count as usize).cloned().collect(),
+                    );
+                };
+                ReturnValue::MultiStringRes(set.iter().take(count as usize).cloned().collect())
+            }
+            None => ReturnValue::Nil,
+        },
     }
 }
