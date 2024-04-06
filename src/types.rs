@@ -21,6 +21,8 @@ pub type Count = i64;
 pub type Index = i64;
 /// Score is used in sorted sets
 pub type Score = i64;
+/// Timeout unit
+pub type UTimeout = i64;
 
 /// DumpTimeoutUnitpe alias.
 pub type Dumpfile = Arc<Mutex<File>>;
