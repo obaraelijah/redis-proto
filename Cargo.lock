@@ -692,6 +692,7 @@ dependencies = [
  "parking_lot 0.9.0",
  "pretty_assertions",
  "rmp-serde",
+ "seahash",
  "serde",
  "slog",
  "sloggers",
@@ -810,6 +811,12 @@ name = "scopeguard"
 version = "1.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "94143f37725109f92c262ed2cf5e59bce7498c01bcc1502d7b9afe439a4e9f49"
+
+[[package]]
+name = "seahash"
+version = "3.0.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "58f57ca1d128a43733fd71d583e837b1f22239a37ebea09cde11d8d9a9080f47"
 
 [[package]]
 name = "semver"
