@@ -10,13 +10,15 @@ use std::sync::Arc;
 use parking_lot::{Mutex, RwLock};
 use std::fs::File;
 
+use crate::data_structures::receipt_map::ReceiptMap;
+
 // These types are used by state and ops to actually perform useful work.
 pub type Value = Bytes;
 // Key is the standard type to index our structures
 pub type Key = Bytes;
 /// Count is used for commands that count
 pub type Count = i64;
-/// Index is used to reprcent indices in structures
+/// Index is used to reprecent indices in structures
 pub type Index = i64;
 /// Score is used in sorted sets
 pub type Score = i64;
@@ -170,6 +172,8 @@ pub struct State {
     pub sets: KeySet,
     #[serde(default)]
     pub lists: KeyList,
+    #[serde(skip)]
+    pub reciept_map: Mutex<ReceiptMap>,
 }
 
 /// Mapping of a ReturnValue to a RedisValueRef.
