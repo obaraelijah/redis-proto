@@ -1,6 +1,8 @@
 use crate::types::{Index, State, StateRef, StateStore, ReturnValue};
 use crate::data_structures::receipt_map::{KeyTypes, Receipt};
 
+const DEFAULT_DB: Index = 0;
+
 impl std::fmt::Display for ReturnValue {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
@@ -36,5 +38,19 @@ impl State {
 impl StateStore {
     pub fn get_or_create(&self, index: Index) -> StateRef {
         self.states.entry(index).or_default().clone()
+    }
+
+    pub fn get_default(&self) -> StateRef {
+        self.get_or_create(DEFAULT_DB)
+    }
+
+    pub fn contains_foreign_function(&self, function_symbol: &str) -> bool {
+        self.foreign_functions.read().contains(function_symbol)
+    }
+
+    pub fn add_foreign_function(&self, function_symbol: &str) {
+        self.foreign_functions
+            .write()
+            .insert(function_symbol.into());
     }
 }
