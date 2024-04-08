@@ -173,7 +173,7 @@ pub struct State {
     #[serde(default)]
     pub lists: KeyList,
     #[serde(skip)]
-    pub reciept_map: Mutex<ReceiptMap>,
+    pub receipt_map: Mutex<ReceiptMap>,
 }
 
 /// Mapping of a ReturnValue to a RedisValueRef.

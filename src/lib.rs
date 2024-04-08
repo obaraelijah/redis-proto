@@ -12,6 +12,7 @@ pub mod startup;
 pub mod types;
 #[macro_use]
 pub mod macros;
+pub mod blocking;
 pub mod data_structures;
 pub mod keys;
 pub mod lists;

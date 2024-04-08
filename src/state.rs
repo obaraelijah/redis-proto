@@ -20,17 +20,17 @@ impl std::fmt::Display for ReturnValue {
 
 impl State {
     pub fn get_receipt(&self) -> Receipt {
-        let mut rm = self.reciept_map.lock();
+        let mut rm = self.receipt_map.lock();
         rm.get_receipt()
     }
 
     pub fn receipt_timed_out(&self, receipt: Receipt) -> bool {
-        let rm = self.reciept_map.lock();
+        let rm = self.receipt_map.lock();
         rm.receipt_timed_out(receipt)
     }
 
     pub fn wake_list(&self, list_key: &[u8]) {
-        let mut rm = self.reciept_map.lock();
+        let mut rm = self.receipt_map.lock();
         rm.wake_with_key(KeyTypes::list(list_key));
     }
 }
