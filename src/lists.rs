@@ -1,5 +1,5 @@
 use crate::ops::RVec;
-use crate::types::{Count, Key, ReturnValue, StateRef, Value};
+use crate::types::{Count, Key, ReturnValue, StateRef, Value, Index};
 use crate::{make_reader, make_writer, op_variants};
 
 op_variants! {
@@ -10,7 +10,9 @@ op_variants! {
     LLen(Key),
     LPop(Key),
     RPop(Key),
-    RPush(Key, RVec<Value>)
+    RPush(Key, RVec<Value>),
+    LIndex(Key, Index),
+    LSet(Key, Index, Value)
 }
 
 make_reader!(lists, read_lists);
@@ -61,5 +63,30 @@ pub async fn list_interact(list_op: ListOps, state: StateRef) -> ReturnValue {
             }
             ReturnValue::IntRes(list.len() as Count)
         }
+        ListOps::LIndex(key, index) => match write_lists!(state, &key) {
+            Some(list) => {
+                let llen = list.len() as i64;
+                let real_index = if index < 0 { llen + index } else { index };
+                if !(0 <= real_index && real_index < llen) {
+                    return ReturnValue::Error(b"Bad Range!");
+                }
+                let real_index = real_index as usize;
+                ReturnValue::StringRes(list[real_index].clone())
+            }
+            None => ReturnValue::Nil,
+        },
+        ListOps::LSet(key, index, value) => match write_lists!(state, &key) {
+            Some(mut list) => {
+                let llen = list.len() as i64;
+                let real_index = if index < 0 { llen + index } else { index };
+                if !(0 <= real_index && real_index < llen) {
+                    return ReturnValue::Error(b"Bad Range!");
+                }
+                let real_index = real_index as usize;
+                list[real_index] = value;
+                ReturnValue::Ok
+            }
+            None => ReturnValue::Error(b"No list at key!"),
+        },
     }
 }
