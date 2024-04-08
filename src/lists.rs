@@ -7,7 +7,10 @@ op_variants! {
     LPush(Key, RVec<Value>),
     LPushX(Key, Value),
     RPushX(Key, Value),
-    LLen(Key)
+    LLen(Key),
+    LPop(Key),
+    RPop(Key),
+    RPush(Key, RVec<Value>)
 }
 
 make_reader!(lists, read_lists);
@@ -43,5 +46,20 @@ pub async fn list_interact(list_op: ListOps, state: StateRef) -> ReturnValue {
             Some(l) => ReturnValue::IntRes(l.len() as Count),
             None => ReturnValue::IntRes(0),
         },
+        ListOps::LPop(key) => match write_lists!(state, &key).and_then(|mut v| v.pop_front()) {
+            Some(v) => ReturnValue::StringRes(v),
+            None => ReturnValue::Nil,
+        },
+        ListOps::RPop(key) => match write_lists!(state, &key).and_then(|mut v| v.pop_back()) {
+            Some(v) => ReturnValue::StringRes(v),
+            None => ReturnValue::Nil,
+        },
+        ListOps::RPush(key, vals) => {
+            let mut list = state.lists.entry(key).or_default();
+            for val in vals {
+                list.push_back(val)
+            }
+            ReturnValue::IntRes(list.len() as Count)
+        }
     }
 }
