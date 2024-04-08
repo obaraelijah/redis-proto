@@ -1,12 +1,15 @@
-use std::{collections::{HashMap, HashSet}, task::Waker};
 use seahash::hash;
+use std::{
+    collections::{HashMap, HashSet},
+    task::Waker,
+};
 
 pub type Receipt = u32;
 
 #[derive(Hash, Debug, PartialEq, Eq)]
 pub enum KeyTypes {
     List(u64),
-} 
+}
 
 impl KeyTypes {
     pub fn list(key: &[u8]) -> KeyTypes {
@@ -15,14 +18,14 @@ impl KeyTypes {
 }
 
 #[derive(Default, Debug)]
-pub struct RecieptMap {
+pub struct ReceiptMap {
     counter: Receipt,
     wakers: HashMap<Receipt, Waker>,
     timed_out: HashSet<Receipt>,
     keys: HashMap<KeyTypes, Vec<Receipt>>,
 }
 
-impl RecieptMap {
+impl ReceiptMap {
     pub fn get_receipt(&mut self) -> Receipt {
         self.counter += 1;
         self.counter
@@ -33,7 +36,34 @@ impl RecieptMap {
         self.keys.entry(key).or_default().push(receipt);
     }
 
+    // Method for checking if a receipt has timed out
     pub fn receipt_timed_out(&self, receipt: Receipt) -> bool {
         self.timed_out.contains(&receipt)
+    }
+
+    // Method for waking up wakers associated with a specific key
+    pub fn wake_with_key(&mut self, key: KeyTypes) {
+        let v = self.keys.get_mut(&key);
+        if v.is_none() {
+            return;
+        }
+        let v = v.unwrap();
+        while let Some(receipt) = v.pop() {
+            match self.wakers.remove(&receipt) {
+                Some(waker) => {
+                    waker.wake();
+                    break;
+                }
+                None => continue,
+            };
+        }
+    }
+
+    // Method for handling a timed out receipt
+    pub fn timeout_receipt(&mut self, receipt: Receipt) {
+        self.timed_out.insert(receipt);
+        if let Some(waker) = self.wakers.remove(&receipt) {
+            waker.wake();
+        }
     }
 }

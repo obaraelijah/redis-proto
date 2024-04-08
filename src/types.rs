@@ -10,7 +10,6 @@ use std::sync::Arc;
 use parking_lot::{Mutex, RwLock};
 use std::fs::File;
 
-
 // These types are used by state and ops to actually perform useful work.
 pub type Value = Bytes;
 // Key is the standard type to index our structures

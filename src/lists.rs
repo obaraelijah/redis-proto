@@ -11,6 +11,5 @@ make_reader!(lists, read_lists);
 make_writer!(lists, write_lists);
 
 pub async fn list_interact(list_op: ListOps, state: StateRef) -> ReturnValue {
-   unimplemented!()
+    unimplemented!()
 }
-
