@@ -12,7 +12,9 @@ op_variants! {
     RPop(Key),
     RPush(Key, RVec<Value>),
     LIndex(Key, Index),
-    LSet(Key, Index, Value)
+    LSet(Key, Index, Value),
+    LRange(Key, Index, Index),
+    LTrim(Key, Index, Index)
 }
 
 make_reader!(lists, read_lists);
@@ -88,5 +90,54 @@ pub async fn list_interact(list_op: ListOps, state: StateRef) -> ReturnValue {
             }
             None => ReturnValue::Error(b"No list at key!"),
         },
+        ListOps::LRange(key, start_index, end_index) => match read_lists!(state, &key) {
+            Some(list) => {
+                let start_index =
+                    std::cmp::max(0, if start_index < 0 { 0 } else { start_index } as usize);
+                let end_index = std::cmp::min(
+                    list.len(),
+                    if end_index < 0 {
+                        list.len() as i64 + end_index
+                    } else {
+                        end_index
+                    } as usize,
+                );
+                let mut ret = Vec::new();
+                for (index, value) in list.iter().enumerate() {
+                    if start_index <= index && index <= end_index {
+                        ret.push(value.clone());
+                    }
+                    if index > end_index {
+                        break;
+                    }
+                }
+                ReturnValue::MultiStringRes(ret)
+            }
+            None => ReturnValue::MultiStringRes(vec![]),
+        },
+        ListOps::LTrim(key, start_index, end_index) => {
+            match write_lists!(state, &key) {
+                Some(mut list) => {
+                    let start_index =
+                        std::cmp::max(0, if start_index < 0 { 0 } else { start_index } as usize);
+                    let end_index = std::cmp::min(
+                        list.len(),
+                        if end_index < 0 {
+                            list.len() as i64 + end_index
+                        } else {
+                            end_index
+                        } as usize,
+                    ) + 1;
+                    // Deal with right side
+                    list.truncate(end_index);
+                    // Deal with left side
+                    for _ in 0..start_index {
+                        list.pop_front();
+                    }
+                    ReturnValue::Ok
+                }
+                None => ReturnValue::Ok,
+            }
+        }
     }
 }
