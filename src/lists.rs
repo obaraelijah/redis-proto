@@ -1,5 +1,5 @@
 use crate::ops::RVec;
-use crate::types::{Count, Key, ReturnValue, StateRef, Value, Index};
+use crate::types::{Count, Index, Key, ReturnValue, StateRef, Value};
 use crate::{make_reader, make_writer, op_variants};
 
 op_variants! {
@@ -14,7 +14,8 @@ op_variants! {
     LIndex(Key, Index),
     LSet(Key, Index, Value),
     LRange(Key, Index, Index),
-    LTrim(Key, Index, Index)
+    LTrim(Key, Index, Index),
+    RPopLPush(Key, Key)
 }
 
 make_reader!(lists, read_lists);
@@ -139,5 +140,24 @@ pub async fn list_interact(list_op: ListOps, state: StateRef) -> ReturnValue {
                 None => ReturnValue::Ok,
             }
         }
+        ListOps::RPopLPush(source, dest) => match state.lists.get_mut(&source) {
+            None => ReturnValue::Nil,
+            Some(mut source_list) => match source_list.pop_back() {
+                None => ReturnValue::Nil,
+                Some(value) => {
+                    if source == dest {
+                        source_list.push_back(value.clone());
+                    } else {
+                        state
+                            .lists
+                            .entry(dest.clone())
+                            .or_default()
+                            .push_back(value.clone());
+                        state.wake_list(&dest);
+                    }
+                    ReturnValue::StringRes(value)
+                }
+            },
+        },
     }
 }
