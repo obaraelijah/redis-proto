@@ -1,5 +1,5 @@
-use crate::types::{Index, State, StateRef, StateStore, ReturnValue};
 use crate::data_structures::receipt_map::{KeyTypes, Receipt};
+use crate::types::{Index, ReturnValue, State, StateRef, StateStore};
 
 const DEFAULT_DB: Index = 0;
 
