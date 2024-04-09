@@ -20,3 +20,4 @@ pub mod lists;
 pub mod sets;
 pub mod state;
 pub mod timeouts;
+pub mod sorted_sets;
