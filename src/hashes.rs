@@ -8,7 +8,11 @@ op_variants! {
     HSet(Key, Key, Value),
     HExists(Key, Key),
     HGetAll(Key),
-    HMGet(Key, RVec<Key>)
+    HMGet(Key, RVec<Key>),
+    HKeys(Key),
+    HMSet(Key, RVec<(Key, Value)>),
+    HLen(Key),
+    HDel(Key, RVec<Key>)
 }
 
 make_reader!(hashes, read_hashes);
@@ -67,5 +71,33 @@ pub async fn hash_interact(hash_ops: HashOps, state: StateRef) -> ReturnValue {
                 })
                 .collect(),
         }),
+        HashOps::HKeys(key) => match read_hashes!(state, &key) {
+            Some(hash) => {
+                ReturnValue::Array(hash.keys().cloned().map(ReturnValue::StringRes).collect())
+            }
+            None => ReturnValue::Array(vec![]),
+        },
+        HashOps::HMSet(key, key_values) => {
+            state.hashes.entry(key).or_default().extend(key_values);
+            ReturnValue::Ok
+        }
+        HashOps::HLen(key) => read_hashes!(state, &key) 
+            .map_or(0, |hash| hash.len() as Count)
+            .into(),
+        // HashOps::HLen(key) => read_hashes!(state, &key)
+        //     .map(|hash| hash.len() as Count)
+        //     .unwrap_or(0)
+        //     .into(),
+        // HashOps::HLen(key) => match read_hashes!(state, &key) {
+        //     Some(hash) => ReturnValue::IntRes(hash.len() as Count),
+        //     None => ReturnValue::IntRes(0),
+        // }
+        HashOps::HDel(key, fields) => match write_hashes!(state, &key) {
+            Some(mut hash) => {
+                let res = fields.iter().filter_map(|field| hash.remove(field)).count();
+                ReturnValue::IntRes(res as Count)
+            }
+            None => ReturnValue::IntRes(0),
+        },
     }
 }
