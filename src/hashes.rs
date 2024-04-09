@@ -1,6 +1,7 @@
 use crate::op_variants;
-use crate::types::{Count, Key, ReturnValue, StateRef, Value};
 use crate::ops::RVec;
+use crate::types::{Count, Key, ReturnValue, StateRef, Value};
+use std::collections::hash_map::Entry;
 
 op_variants! {
     HashOps,
@@ -12,7 +13,11 @@ op_variants! {
     HKeys(Key),
     HMSet(Key, RVec<(Key, Value)>),
     HLen(Key),
-    HDel(Key, RVec<Key>)
+    HDel(Key, RVec<Key>),
+    HIncrBy(Key, Key, Count),
+    HVals(Key),
+    HStrLen(Key, Key),
+    HSetNX(Key, Key, Value)
 }
 
 make_reader!(hashes, read_hashes);
@@ -81,7 +86,26 @@ pub async fn hash_interact(hash_ops: HashOps, state: StateRef) -> ReturnValue {
             state.hashes.entry(key).or_default().extend(key_values);
             ReturnValue::Ok
         }
-        HashOps::HLen(key) => read_hashes!(state, &key) 
+        HashOps::HIncrBy(key, field, count) => {
+            let mut hash = state.hashes.entry(key).or_default();
+            let mut curr_value = match hash.get(&field) {
+                Some(value) => {
+                    let i64_repr = std::str::from_utf8(value)
+                        .map(|e| e.parse::<i64>())
+                        .unwrap();
+                    if i64_repr.is_err() {
+                        return ReturnValue::Error(b"Bad Type!");
+                    }
+                    i64_repr.unwrap()
+                }
+                None => 0,
+            };
+            curr_value += count;
+            let new_value = Value::from(curr_value.to_string());
+            hash.insert(field, new_value);
+            ReturnValue::Ok
+        }
+        HashOps::HLen(key) => read_hashes!(state, &key)
             .map_or(0, |hash| hash.len() as Count)
             .into(),
         // HashOps::HLen(key) => read_hashes!(state, &key)
@@ -99,5 +123,26 @@ pub async fn hash_interact(hash_ops: HashOps, state: StateRef) -> ReturnValue {
             }
             None => ReturnValue::IntRes(0),
         },
+        HashOps::HVals(key) => match read_hashes!(state, &key) {
+            Some(hash) => {
+                ReturnValue::Array(hash.values().cloned().map(ReturnValue::StringRes).collect())
+            }
+            None => ReturnValue::Array(vec![]),
+        },
+        // XXX: For some reason there's lifetime issues when doing the usual combinator chain.
+        HashOps::HStrLen(key, field) => match read_hashes!(state, &key) {
+            None => ReturnValue::Nil,
+            Some(hash) => hash
+                .get(&field)
+                .map_or(ReturnValue::Nil, |f| ReturnValue::IntRes(f.len() as Count)),
+        },
+        HashOps::HSetNX(key, field, value) => {
+            if let Entry::Vacant(ent) = state.hashes.entry(key).or_default().entry(field) {
+                ent.insert(value);
+                ReturnValue::IntRes(1)
+            } else {
+                ReturnValue::IntRes(0)
+            }
+        }
     }
 }

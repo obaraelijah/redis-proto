@@ -1,6 +1,6 @@
 use crate::keys::{key_interact, KeyOps};
-use crate::sets::{set_interact, SetOps};
 use crate::lists::{list_interact, ListOps};
+use crate::sets::{set_interact, SetOps};
 use crate::types::{Count, RedisValueRef, ReturnValue, StateRef, Value};
 
 use std::convert::TryFrom;
