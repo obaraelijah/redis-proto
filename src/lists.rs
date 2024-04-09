@@ -1,5 +1,6 @@
 use crate::ops::RVec;
-use crate::types::{Count, Index, Key, ReturnValue, StateRef, Value};
+use crate::timeouts::blocking_key_timeout;
+use crate::types::{Count, Index, Key, ReturnValue, StateRef, UTimeout, Value};
 use crate::{make_reader, make_writer, op_variants};
 
 op_variants! {
@@ -15,12 +16,15 @@ op_variants! {
     LSet(Key, Index, Value),
     LRange(Key, Index, Index),
     LTrim(Key, Index, Index),
-    RPopLPush(Key, Key)
+    RPopLPush(Key, Key),
+    BLPop(Key, UTimeout),
+    BRPop(Key, UTimeout)
 }
 
 make_reader!(lists, read_lists);
 make_writer!(lists, write_lists);
 
+#[allow(clippy::cognitive_complexity)]
 pub async fn list_interact(list_op: ListOps, state: StateRef) -> ReturnValue {
     match list_op {
         ListOps::LPush(key, vals) => {
@@ -159,5 +163,25 @@ pub async fn list_interact(list_op: ListOps, state: StateRef) -> ReturnValue {
                 }
             },
         },
+        ListOps::BLPop(key, timeout) => {
+            let state_clone = state.clone();
+            let key_clone = key.clone();
+            let bl = move || {
+                write_lists!(state, &key)
+                    .and_then(|mut v| v.pop_front())
+                    .map(ReturnValue::StringRes)
+            };
+            blocking_key_timeout(Box::new(bl), state_clone, key_clone, timeout).await
+        }
+        ListOps::BRPop(key, timeout) => {
+            let state_clone = state.clone();
+            let key_clone = key.clone();
+            let br = move || {
+                write_lists!(state, &key)
+                    .and_then(|mut v| v.pop_back())
+                    .map(ReturnValue::StringRes)
+            };
+            blocking_key_timeout(Box::new(br), state_clone, key_clone, timeout).await
+        }
     }
 }
