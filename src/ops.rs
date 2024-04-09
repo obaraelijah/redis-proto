@@ -1,5 +1,6 @@
 use crate::keys::{key_interact, KeyOps};
 use crate::sets::{set_interact, SetOps};
+use crate::lists::{list_interact, ListOps};
 use crate::types::{Count, RedisValueRef, ReturnValue, StateRef, Value};
 
 use std::convert::TryFrom;
@@ -8,6 +9,7 @@ use std::convert::TryFrom;
 pub enum Ops {
     Keys(KeyOps),
     Sets(SetOps),
+    Lists(ListOps),
 }
 
 /// Top level interaction function. Used by the server to run
@@ -16,6 +18,7 @@ pub async fn op_interact(op: Ops, state: StateRef) -> ReturnValue {
     match op {
         Ops::Keys(op) => key_interact(op, state).await,
         Ops::Sets(op) => set_interact(op, state).await,
+        Ops::Lists(op) => list_interact(op, state).await,
     }
 }
 

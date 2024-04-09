@@ -2,7 +2,7 @@ use bytes::Bytes;
 use dashmap::DashMap;
 use serde::{Deserialize, Serialize};
 /// Common Types in the project.
-use std::collections::{HashSet, VecDeque};
+use std::collections::{HashMap, HashSet, VecDeque};
 use std::convert::From;
 use std::sync::atomic::AtomicU64;
 use std::sync::Arc;
@@ -139,6 +139,8 @@ type KeyString = DashMap<Key, Value>;
 type KeySet = DashMap<Key, HashSet<Value>>;
 /// Canonical type for Key-List storage.
 type KeyList = DashMap<Key, VecDeque<Value>>;
+/// Canonical type for Key-Hash storage.
+type KeyHash = DashMap<Key, HashMap<Key, Value>>;
 
 ///Top level database struct
 /// Holds all Stateref dbs, and will hand them out on request
@@ -172,6 +174,8 @@ pub struct State {
     pub sets: KeySet,
     #[serde(default)]
     pub lists: KeyList,
+    #[serde(default)]
+    pub hashes: KeyHash,
     #[serde(skip)]
     pub receipt_map: Mutex<ReceiptMap>,
 }
