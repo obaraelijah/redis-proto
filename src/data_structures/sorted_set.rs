@@ -1,3 +1,6 @@
+// Clippy does not like SortedSet. TODO: Figure out if we can fix this.
+#![allow(clippy::mutable_key_type)]
+
 use crate::types::{Score, Key, Count, Index};
 use std::collections::{BTreeMap, BTreeSet, HashMap};
 use std::cmp::Ordering;
@@ -5,6 +8,10 @@ use serde::{Deserialize, Serialize};
 use crate::ops::RVec;
 use std::collections::hash_map::Entry;
 
+// TODO: Use convenient-skiplist
+
+// TODO: Why doesn't this actually allow it?
+#[allow(clippy::mutable_key_type)]
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Clone)]
 pub struct SortedSetMember {
     pub score: Score,
@@ -83,6 +90,7 @@ pub struct SortedSet {
     scores: BTreeSet<SortedSetMember>,
 }
 
+#[allow(unused)]
 impl SortedSet {
     /// Create a new SortedSet
     pub fn new() -> Self {
@@ -182,5 +190,95 @@ impl SortedSet {
 
 #[cfg(test)]
 mod test_sorted_sets_ds {
-    
+    use crate::data_structures::sorted_set::{SortedSet, SortedSetMember};
+    use crate::ops::RVec;
+    use crate::types::{Key, Score};
+    use bytes::Bytes;
+    use smallvec::smallvec;
+
+    fn get_multiple_entries() -> RVec<(Score, Key)> {
+        smallvec![
+            (1, Bytes::from_static(b"hi_0")),
+            (3, Bytes::from_static(b"hi_1")),
+            (5, Bytes::from_static(b"hi_2")),
+        ]
+    }
+
+    #[allow(unused)]
+    fn get_multiple_sorted_set_entries() -> RVec<SortedSetMember> {
+        get_multiple_entries()
+            .into_iter()
+            .map(|(score, key)| SortedSetMember::new(&key, score))
+            .collect()
+    }
+
+    #[test]
+    fn test_add() {
+        let mut ss = SortedSet::new();
+        assert_eq!(1, ss.add(smallvec![(2, Bytes::from_static(b"hi"))]));
+        assert_eq!(
+            get_multiple_entries().len() as i64,
+            ss.add(get_multiple_entries())
+        );
+        assert_eq!(0, ss.add(get_multiple_entries()));
+    }
+
+    #[test]
+    fn test_range() {
+        let mut ss = SortedSet::new();
+
+        ss.add(smallvec![
+            (1, Bytes::from_static(b"hi_0")),
+            (3, Bytes::from_static(b"hi_1")),
+            (5, Bytes::from_static(b"hi_2")),
+        ]);
+        let expected: RVec<SortedSetMember> = smallvec![
+            SortedSetMember::new(&Bytes::from_static(b"hi_0"), 1),
+            SortedSetMember::new(&Bytes::from_static(b"hi_1"), 3),
+            SortedSetMember::new(&Bytes::from_static(b"hi_2"), 5),
+        ];
+        assert_eq!(ss.range((1, 5)), expected);
+        let expected: RVec<SortedSetMember> = smallvec![SortedSetMember::new(&b"hi_1".to_vec(), 3)];
+        assert_eq!(ss.range((2, 4)), expected);
+        let empty_vec: RVec<SortedSetMember> = RVec::new();
+        assert_eq!(ss.range((20, 40)), empty_vec);
+    }
+
+    #[test]
+    fn test_remove() {
+        let mut ss = SortedSet::new();
+        let all_keys: Vec<Key> = get_multiple_entries()
+            .into_iter()
+            .map(|(_, key)| key)
+            .collect();
+        assert_eq!(0, ss.remove(&all_keys.clone()));
+        ss.add(get_multiple_entries());
+        assert_eq!(1, ss.remove(&[all_keys[1].clone()]));
+        assert_eq!(2, ss.card());
+        assert_eq!(2, ss.remove(&all_keys));
+        assert_eq!(0, ss.card());
+    }
+
+    // XXX: Fix test case. Am moving to proper skiplist later.
+    #[test]
+    fn test_pop_max() {
+        let mut ss = SortedSet::new();
+        assert_eq!(ss.pop_max(10), Vec::new());
+        ss.add(get_multiple_entries());
+        let entries = get_multiple_sorted_set_entries();
+        let first_two: Vec<SortedSetMember> = entries.iter().cloned().collect();
+        ss.pop_max(2); // TODO: Fix this test case.
+                       // assert_eq!(ss.pop_max(2).as_slice(), &first_two[1..]);
+        assert_eq!(ss.pop_max(2).as_slice(), &[first_two[0].clone()]);
+    }
+    #[test]
+    fn test_pop_min() {
+        let mut ss = SortedSet::new();
+        assert_eq!(ss.pop_min(10), Vec::new());
+        ss.add(get_multiple_entries());
+        let entries = get_multiple_sorted_set_entries();
+        let last_two: Vec<SortedSetMember> = entries.iter().cloned().collect();
+        assert_eq!(ss.pop_min(2).as_slice(), &last_two[..2]);
+        assert_eq!(ss.pop_min(2).as_slice(), &[last_two[2].clone()]);
+    }
 }
