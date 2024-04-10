@@ -1,12 +1,12 @@
 // Clippy does not like SortedSet. TODO: Figure out if we can fix this.
 #![allow(clippy::mutable_key_type)]
 
-use crate::types::{Score, Key, Count, Index};
-use std::collections::{BTreeMap, BTreeSet, HashMap};
-use std::cmp::Ordering;
-use serde::{Deserialize, Serialize};
 use crate::ops::RVec;
+use crate::types::{Count, Index, Key, Score};
+use serde::{Deserialize, Serialize};
+use std::cmp::Ordering;
 use std::collections::hash_map::Entry;
+use std::collections::{BTreeMap, BTreeSet, HashMap};
 
 // TODO: Use convenient-skiplist
 

@@ -11,6 +11,7 @@ use parking_lot::{Mutex, RwLock};
 use std::fs::File;
 
 use crate::data_structures::receipt_map::ReceiptMap;
+use crate::data_structures::sorted_set::SortedSet;
 
 // These types are used by state and ops to actually perform useful work.
 pub type Value = Bytes;
@@ -141,6 +142,8 @@ type KeySet = DashMap<Key, HashSet<Value>>;
 type KeyList = DashMap<Key, VecDeque<Value>>;
 /// Canonical type for Key-Hash storage.
 type KeyHash = DashMap<Key, HashMap<Key, Value>>;
+/// Canonical type for Key-Hash storage.
+type KeyZSet = DashMap<Key, SortedSet>;
 
 ///Top level database struct
 /// Holds all Stateref dbs, and will hand them out on request
@@ -176,6 +179,8 @@ pub struct State {
     pub lists: KeyList,
     #[serde(default)]
     pub hashes: KeyHash,
+    #[serde(default)]
+    pub zsets: KeyZSet,
     #[serde(skip)]
     pub receipt_map: Mutex<ReceiptMap>,
 }

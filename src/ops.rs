@@ -1,7 +1,7 @@
+use crate::hashes::{hash_interact, HashOps};
 use crate::keys::{key_interact, KeyOps};
 use crate::lists::{list_interact, ListOps};
 use crate::sets::{set_interact, SetOps};
-use crate::hashes::{hash_interact, HashOps};
 use crate::types::{Count, RedisValueRef, ReturnValue, StateRef, Value};
 
 use std::convert::TryFrom;
