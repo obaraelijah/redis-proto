@@ -1,4 +1,4 @@
-use crate::types::{Score, Key, Count};
+use crate::types::{Score, Key, Count, Index};
 use std::collections::{BTreeMap, BTreeSet, HashMap};
 use std::cmp::Ordering;
 use serde::{Deserialize, Serialize};
@@ -155,4 +155,32 @@ impl SortedSet {
         }
         ret
     }
+
+    /// Remove count (default: 1) minimum members from the sorted set
+    pub fn pop_min(&mut self, count: Count) -> Vec<SortedSetMember> {
+        let count = count as usize; // TODO: What if it's negative?
+        let ret: Vec<SortedSetMember> = self.scores.iter().take(count).cloned().collect();
+        for key in ret.iter().map(|s| s.member.clone()) {
+            self.remove(&[key.into()]);
+        }
+        ret
+    }
+
+    // /// Get the maximum score in the sorted set
+    // pub fn max_score(&self) -> Option<Score> {
+    //     self.scores.iter().rev().next().cloned().map(|m| m.score)
+    // }
+
+    /// Get the rank of a given key in a sorted set
+    pub fn rank(&self, key: Key) -> Option<Index> {
+        self.scores
+            .iter()
+            .position(|s| s.member.as_bytes() == &*key)
+            .map(|pos| pos as Index)
+    }
+}
+
+#[cfg(test)]
+mod test_sorted_sets_ds {
+    
 }
