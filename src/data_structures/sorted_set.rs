@@ -6,7 +6,7 @@ use crate::types::{Count, Index, Key, Score};
 use serde::{Deserialize, Serialize};
 use std::cmp::Ordering;
 use std::collections::hash_map::Entry;
-use std::collections::{BTreeMap, BTreeSet, HashMap};
+use std::collections::{BTreeSet, HashMap};
 
 // TODO: Use convenient-skiplist
 
