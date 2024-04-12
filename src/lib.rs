@@ -19,6 +19,6 @@ pub mod keys;
 pub mod lists;
 pub mod sets;
 pub mod sorted_sets;
+pub mod stack;
 pub mod state;
 pub mod timeouts;
-pub mod stack;
