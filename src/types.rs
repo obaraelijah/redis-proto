@@ -12,6 +12,7 @@ use std::fs::File;
 
 use crate::data_structures::receipt_map::ReceiptMap;
 use crate::data_structures::sorted_set::SortedSet;
+use crate::data_structures::stack::Stack;
 
 // These types are used by state and ops to actually perform useful work.
 pub type Value = Bytes;
@@ -144,6 +145,7 @@ type KeyList = DashMap<Key, VecDeque<Value>>;
 type KeyHash = DashMap<Key, HashMap<Key, Value>>;
 /// Canonical type for Key-Hash storage.
 type KeyZSet = DashMap<Key, SortedSet>;
+type KeyStack = DashMap<Key, Stack<Value>>;
 
 ///Top level database struct
 /// Holds all Stateref dbs, and will hand them out on request
@@ -181,6 +183,8 @@ pub struct State {
     pub hashes: KeyHash,
     #[serde(default)]
     pub zsets: KeyZSet,
+    #[serde(default)]
+    pub stacks: KeyStack,
     #[serde(skip)]
     pub receipt_map: Mutex<ReceiptMap>,
 }
