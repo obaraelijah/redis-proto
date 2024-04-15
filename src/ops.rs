@@ -1,3 +1,4 @@
+use std::fmt::Debug;
 use std::convert::TryFrom;
 use bytes::Bytes;
 
@@ -143,6 +144,17 @@ impl TryFrom<&RedisValueRef> for Count {
     }
 }
 
+/// Ensure the passed collection has an even number of arguments.
+#[inline]
+fn ensure_even<T>(v: &[T]) -> Result<(), OpsError> {
+    if v.len() % 2 != 0 {
+        return Err(OpsError::InvalidArgPattern(
+            "even number of arguments required!",
+        ));
+    }
+    Ok(())
+}
+
 use smallvec::SmallVec;
 const DEFAULT_SMALL_VEC_SIZE: usize = 2;
 pub type RVec<T> = SmallVec<[T; DEFAULT_SMALL_VEC_SIZE]>;
@@ -195,4 +207,45 @@ where
     let key = KeyType::try_from(&array[1])?;
     let val = ValueType::try_from(&array[2])?;
     Ok((key, val))
+}
+
+/// Transform &[RedisValueRef] into (KeyType, Vec<TailType>)
+/// Used for commands like DEL arg1 arg2...
+fn get_key_and_tail<'a, KeyType, TailType>(
+    array: &'a [RedisValueRef],
+) -> Result<(KeyType, RVec<TailType>), OpsError>
+where
+    KeyType: TryFrom<&'a RedisValueRef, Error = OpsError>,
+    TailType: TryFrom<&'a RedisValueRef, Error = OpsError>,
+{
+    if array.len() < 3 {
+        return Err(OpsError::WrongNumberOfArgs(3, array.len()));
+    }
+    let set_key = KeyType::try_from(&array[1])?;
+    let mut tail = RVec::new();
+    for tail_item in array.iter().skip(2) {
+        let tmp = TailType::try_from(tail_item)?;
+        tail.push(tmp)
+    }
+    Ok((set_key, tail))
+}
+
+/// Transform a sequence of [Key1, Val1, Key2, Val2, ...] -> Vec<(Key, Value)>
+fn get_key_value_pairs<'a, KeyType, ValueType>(
+    tail: &[&'a RedisValueRef],
+) -> Result<RVec<(KeyType, ValueType)>, OpsError>
+where
+    KeyType: TryFrom<&'a RedisValueRef, Error = OpsError> + Debug,
+    ValueType: TryFrom<&'a RedisValueRef, Error = OpsError> + Debug,
+{
+    ensure_even(tail)?;
+    let keys = tail.iter().step_by(2);
+    let vals = tail.iter().skip(1).step_by(2);
+    let mut ret = RVec::new();
+    for (&key, &val) in keys.zip(vals) {
+        let key = KeyType::try_from(key)?;
+        let val = ValueType::try_from(val)?;
+        ret.push((key, val))
+    }
+    Ok(ret)
 }
