@@ -23,3 +23,4 @@ pub mod sorted_sets;
 pub mod stack;
 pub mod state;
 pub mod timeouts;
+pub mod hyperloglog;

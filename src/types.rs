@@ -151,6 +151,7 @@ type KeyZSet = DashMap<Key, SortedSet>;
 /// Canonical type for Key-Bloom storage.
 type KeyBloom = DashMap<Key, GrowableBloom>;
 type KeyStack = DashMap<Key, Stack<Value>>;
+type KeyHyperLogLog = DashMap<Key, amadeus_streaming::HyperLogLog<Value>>;
 
 ///Top level database struct
 /// Holds all Stateref dbs, and will hand them out on request
@@ -192,6 +193,8 @@ pub struct State {
     pub blooms: KeyBloom,
     #[serde(default)]
     pub stacks: KeyStack,
+    #[serde(default)]
+    pub hyperloglogs: KeyHyperLogLog,
     #[serde(skip)]
     pub receipt_map: Mutex<ReceiptMap>,
 }
