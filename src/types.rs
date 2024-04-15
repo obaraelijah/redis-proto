@@ -1,5 +1,6 @@
 use bytes::Bytes;
 use dashmap::DashMap;
+use growable_bloom_filter::GrowableBloom;
 use serde::{Deserialize, Serialize};
 /// Common Types in the project.
 use std::collections::{HashMap, HashSet, VecDeque};
@@ -26,6 +27,8 @@ pub type Index = i64;
 pub type Score = i64;
 /// Timeout unit
 pub type UTimeout = i64;
+/// Bool type
+pub type RedisBool = i64;
 
 /// DumpTimeoutUnitpe alias.
 pub type Dumpfile = Arc<Mutex<File>>;
@@ -145,6 +148,8 @@ type KeyList = DashMap<Key, VecDeque<Value>>;
 type KeyHash = DashMap<Key, HashMap<Key, Value>>;
 /// Canonical type for Key-Hash storage.
 type KeyZSet = DashMap<Key, SortedSet>;
+/// Canonical type for Key-Bloom storage.
+type KeyBloom = DashMap<Key, GrowableBloom>;
 type KeyStack = DashMap<Key, Stack<Value>>;
 
 ///Top level database struct
@@ -183,6 +188,8 @@ pub struct State {
     pub hashes: KeyHash,
     #[serde(default)]
     pub zsets: KeyZSet,
+    #[serde(default)]
+    pub blooms: KeyBloom,
     #[serde(default)]
     pub stacks: KeyStack,
     #[serde(skip)]

@@ -27,6 +27,7 @@ directories = "2.0.2"
 rmp-serde = "0.15"
 smallvec = "1.4.1"
 seahash = "3.0.6"
+growable-bloom-filter = "2.0.1"
 
 [dev-dependencies]
 pretty_assertions = "0.6.1"
