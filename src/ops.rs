@@ -504,6 +504,146 @@ fn translate_array(array: &[RedisValueRef], state_store: StateStoreRef) -> Resul
             ok!(ListOps::RPopLPush(source, dest))
         }
         // Hashes
+        "hget" => {
+            verify_size(&tail, 2)?;
+            let key = Key::try_from(tail[0])?;
+            let field = Key::try_from(tail[1])?;
+            ok!(HashOps::HGet(key, field))
+        }
+        "hset" => {
+            verify_size(&tail, 3)?;
+            let key = Key::try_from(tail[0])?;
+            let field = Key::try_from(tail[1])?;
+            let value = Key::try_from(tail[2])?;
+            ok!(HashOps::HSet(key, field, value))
+        }
+        "hsetnx" => {
+            verify_size(&tail, 3)?;
+            let key = Key::try_from(tail[0])?;
+            let field = Key::try_from(tail[1])?;
+            let value = Key::try_from(tail[2])?;
+            ok!(HashOps::HSetNX(key, field, value))
+        }
+        "hmset" => {
+            verify_size_lower(&tail, 3)?;
+            let key = Key::try_from(tail[0])?;
+            // let args = tails_as_strings(&tail[1..])?;
+            // // TODO: Avoid cloning here
+            // let mut key_value_tuples: Vec<(Key, Value)> = Vec::new();
+            // for i in args.chunks(2) {
+            //     let key_value = (i[0].clone(), i[1].clone());
+            //     key_value_tuples.push(key_value);
+            // }
+            let key_value_tuples = get_key_value_pairs(&tail[1..])?;
+            ok!(HashOps::HMSet(key, key_value_tuples))
+        }
+        "hexists" => {
+            verify_size(&tail, 2)?;
+            let key = Key::try_from(tail[0])?;
+            let field = Key::try_from(tail[1])?;
+            ok!(HashOps::HExists(key, field))
+        }
+        "hgetall" => {
+            verify_size(&tail, 1)?;
+            let key = Key::try_from(tail[0])?;
+            ok!(HashOps::HGetAll(key))
+        }
+        "hmget" => {
+            verify_size_lower(&tail, 2)?;
+            let key = Key::try_from(tail[0])?;
+            let fields = collect_from_tail(&tail[1..])?;
+            ok!(HashOps::HMGet(key, fields))
+        }
+        "hkeys" => {
+            verify_size(&tail, 1)?;
+            let key = Key::try_from(tail[0])?;
+            ok!(HashOps::HKeys(key))
+        }
+        "hlen" => {
+            verify_size(&tail, 1)?;
+            let key = Key::try_from(tail[0])?;
+            ok!(HashOps::HLen(key))
+        }
+        "hdel" => {
+            verify_size_lower(&tail, 2)?;
+            let key = Key::try_from(tail[0])?;
+            let fields = collect_from_tail(&tail[1..])?;
+            ok!(HashOps::HDel(key, fields))
+        }
+        "hvals" => {
+            verify_size(&tail, 1)?;
+            let key = Key::try_from(tail[0])?;
+            ok!(HashOps::HVals(key))
+        }
+        "hstrlen" => {
+            // verify_size(&tail, 2)?;
+            // let key = Key::try_from(tail[0])?;
+            // let field = Key::try_from(tail[1])?;
+
+            // ok!(HashOps::HStrLen(key, field))
+            // get_key_and_value
+            let (key, field) = get_key_and_value(array)?;
+            ok!(HashOps::HStrLen(key, field))
+        }
+        "hincrby" => {
+            verify_size(&tail, 3)?;
+            let key = Key::try_from(tail[0])?;
+            let field = Key::try_from(tail[1])?;
+            let value = Count::try_from(tail[2])?;
+            Ok(Ops::Hashes(HashOps::HIncrBy(key, field, value)))
+        }
+        // Sorted Sets
+        "zadd" => {
+            verify_size_lower(&tail, 3)?;
+            let key = Key::try_from(tail[0])?;
+            let member_scores = get_key_value_pairs(&tail[1..])?;
+            ok!(ZSetOps::ZAdd(key, member_scores))
+        }
+        "zrem" => {
+            verify_size_lower(&tail, 2)?;
+            let (key, keys_to_rem) = get_key_and_tail(&array[1..])?;
+            ok!(ZSetOps::ZRem(key, keys_to_rem))
+        }
+        "zrange" => {
+            verify_size(&tail, 3)?;
+            let key = Key::try_from(tail[0])?;
+            let lower = Score::try_from(tail[1])?;
+            let upper = Score::try_from(tail[2])?;
+            ok!(ZSetOps::ZRange(key, lower, upper))
+        }
+        "zcard" => {
+            verify_size(&tail, 1)?;
+            let key = Key::try_from(tail[0])?;
+            ok!(ZSetOps::ZCard(key))
+        }
+        "zscore" => {
+            verify_size(&tail, 2)?;
+            let key = Key::try_from(tail[0])?;
+            let score = Key::try_from(tail[1])?;
+            ok!(ZSetOps::ZScore(key, score))
+        }
+        "zpopmax" => {
+            verify_size(&tail, 2)?;
+            let key = Key::try_from(tail[0])?;
+            let count = Count::try_from(tail[1])?;
+            ok!(ZSetOps::ZPopMax(key, count))
+        }
+        "zpopmin" => {
+            verify_size_lower(&tail, 1)?;
+            let key = Key::try_from(tail[0])?;
+            let count = if tail.len() == 1 {
+                1.into()
+            } else {
+                Count::try_from(tail[1])?
+            };
+            ok!(ZSetOps::ZPopMin(key, count))
+        }
+        "zrank" => {
+            verify_size(&tail, 2)?;
+            let key = Key::try_from(tail[0])?;
+            let member_key = Key::try_from(tail[1])?;
+            ok!(ZSetOps::ZRank(key, member_key))
+        }
         _ => Err(OpsError::UnknownOp),
     }
 }

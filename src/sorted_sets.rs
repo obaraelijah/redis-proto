@@ -7,6 +7,7 @@ op_variants! {
     ZAdd(Key, RVec<(Score, Key)>),
     ZRem(Key, RVec<Key>),
     ZRange(Key, Score, Score),
+    ZCard(Key),
     ZScore(Key, Key),
     ZPopMax(Key, Count),
     ZPopMin(Key, Count),
@@ -43,6 +44,10 @@ pub async fn zset_interact(zset_op: ZSetOps, state: StateRef) -> ReturnValue {
                     .collect::<Vec<_>>()
             })
             .unwrap_or_default()
+            .into(),
+        ZSetOps::ZCard(zset_key) => read_zsets!(state, &zset_key)
+            .map(|zset| zset.card())
+            .unwrap_or(0)
             .into(),
         ZSetOps::ZScore(zset_key, member_key) => read_zsets!(state, &zset_key)
             .and_then(|zset| zset.score(member_key))
