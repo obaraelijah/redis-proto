@@ -4,7 +4,12 @@ op_variants! {
     MiscOps,
     Pong(),
     FlushAll(),
-    FlushDB()
+    FlushDB(),
+    Exists(Vec<Key>),
+    Keys(), // TODO: Add optional glob
+    PrintCmds(),
+    Select(Index),
+    Echo(Value)
 }
 
 macro_rules! create_commands_list {
@@ -86,5 +91,22 @@ pub async fn misc_interact(
             *state = Default::default();
             ReturnValue::Ok
         }
+        MiscOps::Exists(keys) => ReturnValue::IntRes(
+            keys.iter()
+                .map(|key| state.kv.contains_key(key))
+                .filter(|exists| *exists)
+                .count() as Count,
+        ),
+        MiscOps::Keys() => {
+            let kv_keys = get_all_keys!(state, kv, sets, lists, hashes, zsets, blooms);
+            ReturnValue::MultiStringRes(kv_keys)
+        }
+        MiscOps::PrintCmds() => (*ALL_COMMANDS).clone(),
+        MiscOps::Select(index) => {
+            let state_store = state_store.get_or_create(index);
+            *state = state_store;
+            ReturnValue::Ok
+        }
+        MiscOps::Echo(val) => ReturnValue::StringRes(val),
     }
 }
