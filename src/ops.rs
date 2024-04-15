@@ -147,4 +147,52 @@ use smallvec::SmallVec;
 const DEFAULT_SMALL_VEC_SIZE: usize = 2;
 pub type RVec<T> = SmallVec<[T; DEFAULT_SMALL_VEC_SIZE]>;
 
+fn collect_from_tail<'a, ValueType>(tail: &[&'a RedisValueRef]) -> Result<RVec<ValueType>, OpsError>
+where
+    ValueType: TryFrom<&'a RedisValueRef, Error = OpsError>,
+{
+    let mut items: SmallVec<[ValueType; DEFAULT_SMALL_VEC_SIZE]> =SmallVec::new(); 
+    for item in tail.iter() {
+        let value = ValueType::try_from(item)?;
+        items.push(value);
+    }
+    Ok(items)
+}
 
+fn values_from_tail<'a, ValueType>(tail: &[&'a RedisValueRef]) -> Result<Vec<ValueType>, OpsError>
+where
+    ValueType: TryFrom<&'a RedisValueRef, Error = OpsError>,
+{
+    let mut items: Vec<ValueType> = Vec::new();
+    for item in tail.iter() {
+        let value = ValueType::try_from(item)?;
+        items.push(value);
+    }
+    Ok(items)
+}
+
+/// Verify the exact size of a sequence.
+/// Useful for some commands that require an exact number of arguments (like get and set)
+fn verify_size<T>(v: &[T], size: usize) -> Result<(), OpsError> {
+    if v.len() != size {
+        return Err(OpsError::WrongNumberOfArgs(size, v.len()));
+    }
+    Ok(())
+}
+
+/// Get a tuple of (KeyType, ValueType)
+/// Mainly used for the thousand 2-adic ops
+fn get_key_and_value<'a, KeyType, ValueType>(
+    array: &'a [RedisValueRef],
+) -> Result<(KeyType, ValueType), OpsError>
+where
+    KeyType: TryFrom<&'a RedisValueRef, Error = OpsError>,
+    ValueType: TryFrom<&'a RedisValueRef, Error = OpsError>,
+{
+    if array.len() < 3 {
+        return Err(OpsError::WrongNumberOfArgs(2, array.len() - 1));
+    }
+    let key = KeyType::try_from(&array[1])?;
+    let val = ValueType::try_from(&array[2])?;
+    Ok((key, val))
+}
