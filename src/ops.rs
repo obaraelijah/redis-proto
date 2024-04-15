@@ -694,6 +694,32 @@ fn translate_array(array: &[RedisValueRef], state_store: StateStoreRef) -> Resul
             let key = Key::try_from(tail[0])?;
             ok!(StackOps::STSize(key))
         }
+        // HyperLogLog
+        "pfadd" => {
+            verify_size_lower(&tail, 1)?;
+            // TODO: Handle zero values case
+            let key = Key::try_from(tail[0])?;
+            let vals = collect_from_tail(&tail[1..])?;
+            ok!(HyperLogLogOps::PfAdd(key, vals))
+        }
+        "pfcount" => {
+            verify_size_lower(&tail, 1)?;
+            ok!(HyperLogLogOps::PfCount(collect_from_tail(&tail)?))
+        }
+        "pfmerge" => {
+            verify_size_lower(&tail, 2)?;
+            let dest = Key::try_from(tail[0])?;
+            let sources = collect_from_tail(&tail[1..])?;
+            ok!(HyperLogLogOps::PfMerge(dest, sources))
+        }
+        _ => Err(OpsError::UnknownOp),
+    }
+}
+
+pub fn translate(rv: RedisValueRef, state_store: StateStoreRef) -> Result<Ops, OpsError> {
+    match rv {
+        RedisValueRef::Array(vals) => translate_array(&vals, state_store),
+        bs @ RedisValueRef::BulkString(_) => translate_array(&[bs], state_store),
         _ => Err(OpsError::UnknownOp),
     }
 }
