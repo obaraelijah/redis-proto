@@ -295,6 +295,9 @@ macro_rules! ok {
 }
 
 fn translate_array(array: &[RedisValueRef], state_store: StateStoreRef) -> Result<Ops, OpsError> {
+    if array.is_empty() {
+        return Err(OpsError::Noop);
+    }
     let head = Value::try_from(&array[0])?;
     let head_s = String::from_utf8_lossy(&head);
     let tail: Vec<&RedisValueRef> = array.iter().skip(1).collect();
