@@ -418,7 +418,92 @@ fn translate_array(array: &[RedisValueRef], state_store: StateStoreRef) -> Resul
             };
             ok!(SetOps::SRandMembers(key, count))
         }
-        // Lists
+        "lpush" => {
+            let (key, vals) = get_key_and_tail(array)?;
+            ok!(ListOps::LPush(key, vals))
+        }
+        "rpush" => {
+            let (key, vals) = get_key_and_tail(array)?;
+            ok!(ListOps::RPush(key, vals))
+        }
+        "lpushx" => {
+            verify_size(&tail, 2)?;
+            let key = Key::try_from(tail[0])?;
+            let val = Value::try_from(tail[1])?;
+            ok!(ListOps::LPushX(key, val))
+        }
+        "rpushx" => {
+            verify_size(&tail, 2)?;
+            let key = Key::try_from(tail[0])?;
+            let val = Value::try_from(tail[1])?;
+            ok!(ListOps::RPushX(key, val))
+        }
+        "llen" => {
+            verify_size(&tail, 1)?;
+            let key = Key::try_from(tail[0])?;
+            ok!(ListOps::LLen(key))
+        }
+        "lpop" => {
+            verify_size(&tail, 1)?;
+            let key = Key::try_from(tail[0])?;
+            ok!(ListOps::LPop(key))
+        }
+        "blpop" => {
+            verify_size(&tail, 2)?;
+            let key = Key::try_from(tail[0])?;
+            let timeout = UTimeout::try_from(tail[1])?;
+            ok!(ListOps::BLPop(key, timeout))
+        }
+        "brpop" => {
+            verify_size(&tail, 2)?;
+            let key = Key::try_from(tail[0])?;
+            let timeout = UTimeout::try_from(tail[1])?;
+            ok!(ListOps::BRPop(key, timeout))
+        }
+        "rpop" => {
+            verify_size(&tail, 1)?;
+            let key = Key::try_from(tail[0])?;
+            ok!(ListOps::RPop(key))
+        }
+        "linsert" => {
+            verify_size(&tail, 1)?;
+            let key = Key::try_from(tail[0])?;
+            ok!(ListOps::LPop(key))
+        }
+        "lindex" => {
+            verify_size(&tail, 2)?;
+            let key = Key::try_from(tail[0])?;
+            let index = Index::try_from(tail[1])?;
+            ok!(ListOps::LIndex(key, index))
+        }
+        "lset" => {
+            verify_size(&tail, 3)?;
+            let key = Key::try_from(tail[0])?;
+            let index = Index::try_from(tail[1])?;
+            let value = Value::try_from(tail[2])?;
+            ok!(ListOps::LSet(key, index, value))
+        }
+        "lrange" => {
+            verify_size(&tail, 3)?;
+            let key = Key::try_from(tail[0])?;
+            let start_index = Index::try_from(tail[1])?;
+            let end_index = Index::try_from(tail[2])?;
+            ok!(ListOps::LRange(key, start_index, end_index))
+        }
+        "ltrim" => {
+            verify_size(&tail, 3)?;
+            let key = Key::try_from(tail[0])?;
+            let start_index = Index::try_from(tail[1])?;
+            let end_index = Index::try_from(tail[2])?;
+            ok!(ListOps::LTrim(key, start_index, end_index))
+        }
+        "rpoplpush" => {
+            verify_size(&tail, 2)?;
+            let source = Key::try_from(tail[0])?;
+            let dest = Key::try_from(tail[1])?;
+            ok!(ListOps::RPopLPush(source, dest))
+        }
+        // Hashes
         _ => Err(OpsError::UnknownOp),
     }
 }
