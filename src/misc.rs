@@ -9,7 +9,8 @@ op_variants! {
     Keys(), // TODO: Add optional glob
     PrintCmds(),
     Select(Index),
-    Echo(Value)
+    Echo(Value),
+    Info()
 }
 
 macro_rules! create_commands_list {
@@ -108,5 +109,13 @@ pub async fn misc_interact(
             ReturnValue::Ok
         }
         MiscOps::Echo(val) => ReturnValue::StringRes(val),
+        MiscOps::Info() => {
+            let info: String = [
+                concat!("redis_version", ":", env!("CARGO_PKG_VERSION")),
+                "arch_bits:64",
+            ]
+            .join("\r\n");
+            ReturnValue::StringRes(info.into())
+        }
     }
 }
