@@ -644,6 +644,56 @@ fn translate_array(array: &[RedisValueRef], state_store: StateStoreRef) -> Resul
             let member_key = Key::try_from(tail[1])?;
             ok!(ZSetOps::ZRank(key, member_key))
         }
+        // Bloom filters
+        "binsert" => {
+            verify_size(&tail, 2)?;
+            let key = Key::try_from(tail[0])?;
+            let value = Value::try_from(tail[1])?;
+            ok!(BloomOps::BInsert(key, value))
+        }
+        "bcontains" => {
+            verify_size(&tail, 2)?;
+            let key = Key::try_from(tail[0])?;
+            let value = Value::try_from(tail[1])?;
+            ok!(BloomOps::BContains(key, value))
+        }
+        // Miscellenous
+        "select" => {
+            verify_size(&tail, 1)?;
+            let new_db = Index::try_from(tail[0])?;
+            ok!(MiscOps::Select(new_db))
+        }
+        "echo" => {
+            verify_size(&tail, 1)?;
+            let val = Value::try_from(tail[0])?;
+            ok!(MiscOps::Echo(val))
+        }
+        "info" => {
+            verify_size(&tail, 0)?;
+            ok!(MiscOps::Info())
+        }
+        // StackOps
+        "stpush" => {
+            verify_size(&tail, 2)?;
+            let key = Key::try_from(tail[0])?;
+            let val = Value::try_from(tail[1])?;
+            ok!(StackOps::STPush(key, val))
+        }
+        "stpop" => {
+            verify_size(&tail, 1)?;
+            let key = Key::try_from(tail[0])?;
+            ok!(StackOps::STPop(key))
+        }
+        "stpeek" => {
+            verify_size(&tail, 1)?;
+            let key = Key::try_from(tail[0])?;
+            ok!(StackOps::STPeek(key))
+        }
+        "stsize" => {
+            verify_size(&tail, 1)?;
+            let key = Key::try_from(tail[0])?;
+            ok!(StackOps::STSize(key))
+        }
         _ => Err(OpsError::UnknownOp),
     }
 }
