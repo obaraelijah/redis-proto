@@ -5,7 +5,8 @@ use crate::{make_reader, op_variants};
 op_variants! {
     HyperLogLogOps,
     PfAdd(Key, RVec<Value>),
-    PfCount(RVec<Key>)
+    PfCount(RVec<Key>),
+    PfMerge(Key, RVec<Key>)
 }
 
 make_reader!(hyperloglogs, read_hyperloglogs);
@@ -30,7 +31,33 @@ pub async fn hyperloglog_interact(hyperloglog_op: HyperLogLogOps, state: StateRe
             ReturnValue::IntRes((new_card != curr_card).into())
         }
         HyperLogLogOps::PfCount(keys) => {
-            unimplemented!()
+            // If there's only key, read that. redis appears to return zero if it doesn't exist.
+            if keys.len() == 1 {
+                return read_hyperloglogs!(state, &keys[0])
+                    .map(|pf| pf.len() as i64)
+                    .unwrap_or(0)
+                    .into();
+            }
+            let res = keys
+                .iter()
+                .filter_map(|key| read_hyperloglogs!(state, key))
+                .fold(default_hyperloglog(), |mut acc, curr_pf| {
+                    acc.union(&curr_pf);
+                    acc
+                })
+                .len() as i64;
+            ReturnValue::IntRes(res)
+        }
+        HyperLogLogOps::PfMerge(dest_key, source_keys) => {
+            let mut dest_pf = state
+                .hyperloglogs
+                .entry(dest_key)
+                .or_insert_with(default_hyperloglog);
+            source_keys
+                .iter()
+                .filter_map(|key| read_hyperloglogs!(state, key))
+                .for_each(|ref pf| dest_pf.union(pf));
+            ReturnValue::Ok
         }
     }
 }
