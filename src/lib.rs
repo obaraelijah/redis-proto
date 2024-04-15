@@ -13,6 +13,7 @@ pub mod types;
 #[macro_use]
 pub mod macros;
 pub mod blocking;
+pub mod bloom;
 pub mod data_structures;
 pub mod hashes;
 pub mod keys;
@@ -22,4 +23,3 @@ pub mod sorted_sets;
 pub mod stack;
 pub mod state;
 pub mod timeouts;
-pub mod bloom;
