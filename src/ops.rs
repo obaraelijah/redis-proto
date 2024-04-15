@@ -1,3 +1,6 @@
+use std::convert::TryFrom;
+use bytes::Bytes;
+
 use crate::bloom::{bloom_interact, BloomOps};
 use crate::hashes::{hash_interact, HashOps};
 use crate::hyperloglog::{hyperloglog_interact, HyperLogLogOps};
@@ -6,15 +9,17 @@ use crate::lists::{list_interact, ListOps};
 use crate::sets::{set_interact, SetOps};
 use crate::sorted_sets::{zset_interact, ZSetOps};
 use crate::stack::{stack_interact, StackOps};
-use crate::types::{Count, RedisValueRef, ReturnValue, StateRef, Value};
+use crate::misc::MiscOps;
+use crate::types::{ReturnValue, StateRef, StateStoreRef};
 
-use std::convert::TryFrom;
+use crate::types::{Count, Index, Key, RedisValueRef, Score, UTimeout, Value};
 
 #[derive(Debug, Clone)]
 pub enum Ops {
     Keys(KeyOps),
     Sets(SetOps),
     Lists(ListOps),
+    Misc(MiscOps),
     Hashes(HashOps),
     ZSets(ZSetOps),
     Stacks(StackOps),
@@ -34,6 +39,7 @@ pub async fn op_interact(op: Ops, state: StateRef) -> ReturnValue {
         Ops::Stacks(op) => stack_interact(op, state).await,
         Ops::Blooms(op) => bloom_interact(op, state).await,
         Ops::HyperLogLogs(op) => hyperloglog_interact(op, state).await,
+        _ => unreachable!(),
     }
 }
 
@@ -137,7 +143,8 @@ impl TryFrom<&RedisValueRef> for Count {
     }
 }
 
-use bytes::Bytes;
 use smallvec::SmallVec;
 const DEFAULT_SMALL_VEC_SIZE: usize = 2;
 pub type RVec<T> = SmallVec<[T; DEFAULT_SMALL_VEC_SIZE]>;
+
+

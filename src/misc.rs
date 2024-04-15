@@ -1,4 +1,4 @@
-use crate::types::{Count, Index, Key, RedisValueRef, ReturnValue, StateRef, StateStoreRef, Value};
+use crate::types::{Count, Index, Key, ReturnValue, StateRef, StateStoreRef, Value};
 
 op_variants! {
     MiscOps,
