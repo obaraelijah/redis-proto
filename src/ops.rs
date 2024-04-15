@@ -183,6 +183,15 @@ where
     Ok(items)
 }
 
+/// Verify that the collection v has _at least_ min_size values.
+/// e.g. If you wanted to verify that there's two or more items, min_size would be 2.
+fn verify_size_lower<T>(v: &[T], min_size: usize) -> Result<(), OpsError> {
+    if v.len() < min_size {
+        return Err(OpsError::NotEnoughArgs(min_size, v.len()));
+    }
+    Ok(())
+}
+
 /// Verify the exact size of a sequence.
 /// Useful for some commands that require an exact number of arguments (like get and set)
 fn verify_size<T>(v: &[T], size: usize) -> Result<(), OpsError> {
@@ -294,10 +303,47 @@ fn translate_array(array: &[RedisValueRef], state_store: StateStoreRef) -> Resul
         "keys" => ok!(MiscOps::Keys()),
         "flushall" => ok!(MiscOps::FlushAll()),
         "flushdb" => ok!(MiscOps::FlushDB()),
-    }
-    // Key-Value
+
+        // Key-Value
     "set" => {
         let (key, val) = get_key_and_value(array)?;
         ok!(KeyOps::Set(key, val))
+    }
+    "mset" => ok!(KeyOps::MSet(get_key_value_pairs(&tail)?)),
+    "get" => {
+        verify_size(&tail, 1)?;
+        let key = Key::try_from(tail[0])?;
+        ok!(KeyOps::Get(key))
+    }
+    "mget" => {
+        verify_size_lower(&tail, 1)?;
+        let keys = collect_from_tail(&tail)?;
+        ok!(KeyOps::MGet(keys))
+    }
+    "del" => {
+        verify_size_lower(&tail, 1)?;
+        let keys = collect_from_tail(&tail)?;
+        ok!(KeyOps::Del(keys))
+    }
+    "rename" => {
+        verify_size(&tail, 2)?;
+        let key = Key::try_from(tail[0])?;
+        let new_key = Key::try_from(tail[1])?;
+        ok!(KeyOps::Rename(key, new_key))
+    }
+    "renamenx" => {
+        verify_size(&tail, 2)?;
+        let key = Key::try_from(tail[0])?;
+        let new_key = Key::try_from(tail[1])?;
+        ok!(KeyOps::RenameNx(key, new_key))
+    }
+    "exists" => {
+        verify_size_lower(&tail, 1)?;
+        let keys = values_from_tail(&tail)?;
+        ok!(MiscOps::Exists(keys))
+    }
+    "printcmds" => ok!(MiscOps::PrintCmds()),
+    // Sets
+    _ => Err(OpsError::UnknownOp),
     }
 }
