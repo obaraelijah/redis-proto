@@ -1,16 +1,16 @@
-use std::fmt::Debug;
-use std::convert::TryFrom;
 use bytes::Bytes;
+use std::convert::TryFrom;
+use std::fmt::Debug;
 
 use crate::bloom::{bloom_interact, BloomOps};
 use crate::hashes::{hash_interact, HashOps};
 use crate::hyperloglog::{hyperloglog_interact, HyperLogLogOps};
 use crate::keys::{key_interact, KeyOps};
 use crate::lists::{list_interact, ListOps};
+use crate::misc::MiscOps;
 use crate::sets::{set_interact, SetOps};
 use crate::sorted_sets::{zset_interact, ZSetOps};
 use crate::stack::{stack_interact, StackOps};
-use crate::misc::MiscOps;
 use crate::types::{ReturnValue, StateRef, StateStoreRef};
 
 use crate::types::{Count, Index, Key, RedisValueRef, Score, UTimeout, Value};
@@ -163,7 +163,7 @@ fn collect_from_tail<'a, ValueType>(tail: &[&'a RedisValueRef]) -> Result<RVec<V
 where
     ValueType: TryFrom<&'a RedisValueRef, Error = OpsError>,
 {
-    let mut items: SmallVec<[ValueType; DEFAULT_SMALL_VEC_SIZE]> =SmallVec::new(); 
+    let mut items: SmallVec<[ValueType; DEFAULT_SMALL_VEC_SIZE]> = SmallVec::new();
     for item in tail.iter() {
         let value = ValueType::try_from(item)?;
         items.push(value);
@@ -305,45 +305,120 @@ fn translate_array(array: &[RedisValueRef], state_store: StateStoreRef) -> Resul
         "flushdb" => ok!(MiscOps::FlushDB()),
 
         // Key-Value
-    "set" => {
-        let (key, val) = get_key_and_value(array)?;
-        ok!(KeyOps::Set(key, val))
-    }
-    "mset" => ok!(KeyOps::MSet(get_key_value_pairs(&tail)?)),
-    "get" => {
-        verify_size(&tail, 1)?;
-        let key = Key::try_from(tail[0])?;
-        ok!(KeyOps::Get(key))
-    }
-    "mget" => {
-        verify_size_lower(&tail, 1)?;
-        let keys = collect_from_tail(&tail)?;
-        ok!(KeyOps::MGet(keys))
-    }
-    "del" => {
-        verify_size_lower(&tail, 1)?;
-        let keys = collect_from_tail(&tail)?;
-        ok!(KeyOps::Del(keys))
-    }
-    "rename" => {
-        verify_size(&tail, 2)?;
-        let key = Key::try_from(tail[0])?;
-        let new_key = Key::try_from(tail[1])?;
-        ok!(KeyOps::Rename(key, new_key))
-    }
-    "renamenx" => {
-        verify_size(&tail, 2)?;
-        let key = Key::try_from(tail[0])?;
-        let new_key = Key::try_from(tail[1])?;
-        ok!(KeyOps::RenameNx(key, new_key))
-    }
-    "exists" => {
-        verify_size_lower(&tail, 1)?;
-        let keys = values_from_tail(&tail)?;
-        ok!(MiscOps::Exists(keys))
-    }
-    "printcmds" => ok!(MiscOps::PrintCmds()),
-    // Sets
-    _ => Err(OpsError::UnknownOp),
+        "set" => {
+            let (key, val) = get_key_and_value(array)?;
+            ok!(KeyOps::Set(key, val))
+        }
+        "mset" => ok!(KeyOps::MSet(get_key_value_pairs(&tail)?)),
+        "get" => {
+            verify_size(&tail, 1)?;
+            let key = Key::try_from(tail[0])?;
+            ok!(KeyOps::Get(key))
+        }
+        "mget" => {
+            verify_size_lower(&tail, 1)?;
+            let keys = collect_from_tail(&tail)?;
+            ok!(KeyOps::MGet(keys))
+        }
+        "del" => {
+            verify_size_lower(&tail, 1)?;
+            let keys = collect_from_tail(&tail)?;
+            ok!(KeyOps::Del(keys))
+        }
+        "rename" => {
+            verify_size(&tail, 2)?;
+            let key = Key::try_from(tail[0])?;
+            let new_key = Key::try_from(tail[1])?;
+            ok!(KeyOps::Rename(key, new_key))
+        }
+        "renamenx" => {
+            verify_size(&tail, 2)?;
+            let key = Key::try_from(tail[0])?;
+            let new_key = Key::try_from(tail[1])?;
+            ok!(KeyOps::RenameNx(key, new_key))
+        }
+        "exists" => {
+            verify_size_lower(&tail, 1)?;
+            let keys = values_from_tail(&tail)?;
+            ok!(MiscOps::Exists(keys))
+        }
+        "printcmds" => ok!(MiscOps::PrintCmds()),
+        // Sets
+        "sadd" => {
+            let (set_key, vals) = get_key_and_tail(array)?;
+            ok!(SetOps::SAdd(set_key, vals))
+        }
+        "srem" => {
+            let (set_key, vals) = get_key_and_tail(array)?;
+            ok!(SetOps::SRem(set_key, vals))
+        }
+        "smembers" => {
+            verify_size(&tail, 1)?;
+            let set_key = Key::try_from(tail[0])?;
+            ok!(SetOps::SMembers(set_key))
+        }
+        "scard" => {
+            verify_size(&tail, 1)?;
+            let key = Key::try_from(tail[0])?;
+            ok!(SetOps::SCard(key))
+        }
+        "sdiff" => {
+            verify_size_lower(&tail, 2)?;
+            let keys = collect_from_tail(&tail)?;
+            ok!(SetOps::SDiff(keys))
+        }
+        "sunion" => {
+            verify_size_lower(&tail, 2)?;
+            let keys = collect_from_tail(&tail)?;
+            ok!(SetOps::SUnion(keys))
+        }
+        "sinter" => {
+            verify_size_lower(&tail, 2)?;
+            let keys = collect_from_tail(&tail)?;
+            ok!(SetOps::SInter(keys))
+        }
+        "sdiffstore" => {
+            let (set_key, sets) = get_key_and_tail(array)?;
+            ok!(SetOps::SDiffStore(set_key, sets))
+        }
+        "sunionstore" => {
+            let (set_key, sets) = get_key_and_tail(array)?;
+            ok!(SetOps::SUnionStore(set_key, sets))
+        }
+        "sinterstore" => {
+            let (set_key, sets) = get_key_and_tail(array)?;
+            ok!(SetOps::SInterStore(set_key, sets))
+        }
+        "spop" => {
+            verify_size_lower(&tail, 1)?;
+            let key = Key::try_from(tail[0])?;
+            let count = match tail.get(1) {
+                Some(c) => Some(Count::try_from(*c)?),
+                None => None,
+            };
+            ok!(SetOps::SPop(key, count))
+        }
+        "sismember" => {
+            let (key, member) = get_key_and_value(array)?;
+            ok!(SetOps::SIsMember(key, member))
+        }
+        "smove" => {
+            verify_size(&tail, 3)?;
+            let src = Key::try_from(tail[0])?;
+            let dest = Key::try_from(tail[1])?;
+            let member = Value::try_from(tail[2])?;
+            ok!(SetOps::SMove(src, dest, member))
+        }
+        "srandmember" => {
+            verify_size_lower(&tail, 1)?;
+            let key = Key::try_from(tail[0])?;
+            let count = match tail.get(1) {
+                Some(c) => Some(Count::try_from(*c)?),
+                None => None,
+            };
+            ok!(SetOps::SRandMembers(key, count))
+        }
+        // Lists
+        _ => Err(OpsError::UnknownOp),
     }
 }
