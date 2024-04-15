@@ -6,6 +6,7 @@ use crate::sorted_sets::{zset_interact, ZSetOps};
 use crate::stack::{stack_interact, StackOps};
 use crate::types::{Count, RedisValueRef, ReturnValue, StateRef, Value};
 use crate::bloom::{bloom_interact, BloomOps};
+use crate::hyperloglog::{hyperloglog_interact, HyperLogLogOps};
 
 use std::convert::TryFrom;
 
@@ -18,6 +19,7 @@ pub enum Ops {
     ZSets(ZSetOps),
     Stacks(StackOps),
     Blooms(BloomOps),
+    HyperLogLogs(HyperLogLogOps),
 }
 
 /// Top level interaction function. Used by the server to run
@@ -31,6 +33,7 @@ pub async fn op_interact(op: Ops, state: StateRef) -> ReturnValue {
         Ops::ZSets(op) => zset_interact(op, state).await,
         Ops::Stacks(op) => stack_interact(op, state).await,
         Ops::Blooms(op) => bloom_interact(op, state).await,
+        Ops::HyperLogLogs(op) => hyperloglog_interact(op, state).await,
     }
 }
 
