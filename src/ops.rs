@@ -249,3 +249,55 @@ where
     }
     Ok(ret)
 }
+
+/// Convenience macro to automatically construct the right variant
+/// of Ops.
+macro_rules! ok {
+    (KeyOps::$OpName:ident($($OpArg:expr),*)) => {
+        Ok(Ops::Keys(KeyOps::$OpName($( $OpArg ),*)))
+    };
+    (MiscOps::$OpName:ident($($OpArg:expr),*)) => {
+        Ok(Ops::Misc(MiscOps::$OpName($( $OpArg ),*)))
+    };
+    (MiscOps::$OpName:ident) => {
+        Ok(Ops::Misc(MiscOps::$OpName))
+    };
+    (SetOps::$OpName:ident($($OpArg:expr),*)) => {
+        Ok(Ops::Sets(SetOps::$OpName($( $OpArg ),*)))
+    };
+    (HashOps::$OpName:ident($($OpArg:expr),*)) => {
+        Ok(Ops::Hashes(HashOps::$OpName($( $OpArg ),*)))
+    };
+    (ListOps::$OpName:ident($($OpArg:expr),*)) => {
+        Ok(Ops::Lists(ListOps::$OpName($( $OpArg ),*)))
+    };
+    (ZSetOps::$OpName:ident($($OpArg:expr),*)) => {
+        Ok(Ops::ZSets(ZSetOps::$OpName($( $OpArg ),*)))
+    };
+    (StackOps::$OpName:ident($($OpArg:expr),*)) => {
+        Ok(Ops::Stacks(StackOps::$OpName($( $OpArg ),*)))
+    };
+    (BloomOps::$OpName:ident($($OpArg:expr),*)) => {
+        Ok(Ops::Blooms(BloomOps::$OpName($( $OpArg ),*)))
+    };
+    (HyperLogLogOps::$OpName:ident($($OpArg:expr),*)) => {
+        Ok(Ops::HyperLogLogs(HyperLogLogOps::$OpName($( $OpArg ),*)))
+    };
+}
+
+fn translate_array(array: &[RedisValueRef], state_store: StateStoreRef) -> Result<Ops, OpsError> {
+    let head = Value::try_from(&array[0])?;
+    let head_s = String::from_utf8_lossy(&head);
+    let tail: Vec<&RedisValueRef> = array.iter().skip(1).collect();
+    match head_s.to_lowercase().as_ref() {
+        "ping" => ok!(MiscOps::Pong()),
+        "keys" => ok!(MiscOps::Keys()),
+        "flushall" => ok!(MiscOps::FlushAll()),
+        "flushdb" => ok!(MiscOps::FlushDB()),
+    }
+    // Key-Value
+    "set" => {
+        let (key, val) = get_key_and_value(array)?;
+        ok!(KeyOps::Set(key, val))
+    }
+}
