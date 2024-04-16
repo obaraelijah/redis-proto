@@ -12,7 +12,7 @@ use crate::{
     types::{Dumpfile, RedisValueRef, ReturnValue, StateStoreRef},
 };
 use std::sync::atomic::Ordering;
-use std::{net::SocketAddr, sync::Arc};
+use std::net::SocketAddr;
 use tokio::net::{TcpListener, TcpStream};
 use tokio_util::codec::Decoder;
 use futures::{SinkExt, StreamExt};
@@ -124,7 +124,7 @@ pub async fn socket_listener(
     dump_file: Dumpfile,
     config: Config,
 ) {
-    // First, get the address determined and parsed
+    // First, get the address determined and parsed.
     let addr_str = format!("{}:{}", "127.0.0.1", config.port);
     let addr = match addr_str.parse::<SocketAddr>() {
         Ok(s) => s,
@@ -153,4 +153,20 @@ pub async fn socket_listener(
             return;
         }
     };
+    // Finally, loop over each TCP accept and spawn a handler.
+    info!(LOGGER, "Listening on: {}", addr);
+    loop {
+        match listener.accept().await {
+            Ok((socket, _)) => {
+                debug!(LOGGER, "Accepted connection!");
+                process(
+                    socket,
+                    state_store.clone(),
+                    dump_file.clone(),
+                )
+                .await;
+            }
+            Err(e) => error!(LOGGER, "Failed to establish connectin: {:?}", e),
+        };
+    }
 }
