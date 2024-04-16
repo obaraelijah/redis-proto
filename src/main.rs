@@ -1,6 +1,7 @@
 use redis_proto::database::{get_dump_file, load_state, save_state_interval};
 use redis_proto::logger::LOGGER;
 use redis_proto::startup::{startup_message, Config};
+use redis_proto::server::socket_listener;
 
 use slog::{info, warn};
 use structopt::StructOpt;
@@ -28,5 +29,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             "Database is in memory-only mode. STATE WILL NOT BE SAVED!"
         );
     }
+
+    socket_listener(state.clone(), dump_file.clone(), opt).await;
     Ok(())
 }
