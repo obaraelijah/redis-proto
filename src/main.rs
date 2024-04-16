@@ -2,6 +2,8 @@ use redis_proto::database::{get_dump_file, load_state, save_state_interval};
 use redis_proto::logger::LOGGER;
 use redis_proto::startup::{startup_message, Config};
 use redis_proto::server::socket_listener;
+use redis_proto::scripting::{handle_redis_cmd, ScriptingBridge, ScriptingEngine};
+use tokio::sync::mpsc::channel;
 
 use slog::{info, warn};
 use structopt::StructOpt;
@@ -29,7 +31,26 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             "Database is in memory-only mode. STATE WILL NOT BE SAVED!"
         );
     }
+    // Create the channels for scripting
+    let (prog_string_sx, prog_string_rx) = channel(12);
+    let (cmd_result_sx, cmd_result_rx) = channel(12);
 
-    socket_listener(state.clone(), dump_file.clone(), opt).await;
+    let scripting_engine =
+        ScriptingEngine::new(prog_string_rx, cmd_result_sx, state.clone(), &opt)?;
+    
+    info!(LOGGER, "ScriptingEngine main loop started");
+    std::thread::spawn(|| scripting_engine.main_loop());
+    
+    let scripting_bridge = ScriptingBridge::new(prog_string_sx);
+
+    tokio::spawn(handle_redis_cmd(
+        cmd_result_rx,
+        state.clone(),
+        dump_file.clone(),
+        scripting_bridge.clone(),
+    ));
+
+    // Start the server! It will start listening for connections.
+    socket_listener(state.clone(), dump_file.clone(), opt, scripting_bridge).await;
     Ok(())
 }
