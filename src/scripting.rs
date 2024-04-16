@@ -1,8 +1,8 @@
 use crate::server::process_command;
 use std::{error::Error, sync::Arc};
+use slog::error;
 use tokio::sync::mpsc::{Sender, Receiver};
 use num_traits::cast::ToPrimitive;
-use x7::bad_types;
 
 use crate::startup::Config;
 use crate::types::Dumpfile;
@@ -86,3 +86,60 @@ impl ForeignData for RedisValueRef {
         Ok(res)
     }
 }
+
+
+#[allow(clippy::type_complexity)]
+pub struct ScriptingBridge {
+    prog_send: Sender<(
+        Program,
+        OneShotSender<Result<RedisValueRef, Box<dyn Error + Send>>>,
+    )>,
+}
+
+impl ScriptingBridge {
+    #[allow(clippy::type_complexity)]
+    pub fn new(
+        prog_send: Sender<(
+            Program,
+            OneShotSender<Result<RedisValueRef, Box<dyn Error + Send>>>,
+        )>,
+    ) -> Arc<Self> {
+        let sb = Self { prog_send };
+        Arc::new(sb)
+    }
+
+    pub async fn handle_script_cmd(&self, cmd: Program) -> RedisValueRef {
+        let (sx, rx) = oneshot_channel();
+        if let Err(e) = self.prog_send.send((cmd, sx)).await {
+            error!(LOGGER, "Failed to send program: {}", e);
+        }
+        match rx.await {
+            Ok(x7_result) => match x7_result {
+                Ok(r) => r,
+                Err(e) => RedisValueRef::Error(format!("{}", e).into()),
+            },
+            Err(e) => {
+                RedisValueRef::Error(format!("Failed to receive a response from x7 {}", e).into())
+            }
+        }
+    }
+}
+
+use tokio::sync::oneshot::{channel as oneshot_channel, Sender as OneShotSender};
+
+use tokio::sync::oneshot::error::TryRecvError;
+pub async fn handle_redis_cmd(
+    mut cmd_recv: Receiver<(Vec<RedisValueRef>, OneShotSender<RedisValueRef>)>,
+    state_store: StateStoreRef,
+    dump_file: Dumpfile,
+    scripting_engine: Arc<ScriptingBridge>,
+) {
+    todo!()
+}
+
+#[derive(Debug)]
+pub enum Program {
+    String(String),
+    Function(String, Vec<RedisValueRef>),
+}
+
