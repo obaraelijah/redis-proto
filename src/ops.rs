@@ -300,13 +300,20 @@ fn translate_array(array: &[RedisValueRef], state_store: StateStoreRef) -> Resul
     }
     let head = Value::try_from(&array[0])?;
     let head_s = String::from_utf8_lossy(&head);
+    if state_store.contains_foreign_function(&head_s) {
+        return ok!(MiscOps::EmbeddedScript(head, array[1..].to_vec()));
+    }
     let tail: Vec<&RedisValueRef> = array.iter().skip(1).collect();
     match head_s.to_lowercase().as_ref() {
         "ping" => ok!(MiscOps::Pong()),
         "keys" => ok!(MiscOps::Keys()),
         "flushall" => ok!(MiscOps::FlushAll()),
         "flushdb" => ok!(MiscOps::FlushDB()),
-
+        "script" => {
+            verify_size(&tail, 1)?;
+            let program = Value::try_from(tail[0])?;
+            ok!(MiscOps::Script(program))
+        }
         // Key-Value
         "set" => {
             let (key, val) = get_key_and_value(array)?;
