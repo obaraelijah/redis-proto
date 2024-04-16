@@ -19,6 +19,11 @@ fn bench_parsing(c: &mut Criterion) {
     group.finish();
 }
 
+fn bench_translate(c: &mut Criterion) {
+    let values: Bytes = std::iter::repeat("a").take(200).collect::<String>().into();
+    
+}
+
 criterion_group!(
     benches,
     bench_parsing,
