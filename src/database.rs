@@ -57,7 +57,7 @@ pub fn load_state(dump_file: Dumpfile, config: &Config) -> Result<StateStoreRef,
 
 /// Make the data directory (directory where the dump file lives)
 fn make_data_dir(data_dir: &Path) {
-    match std::fs::create_dir_all(&data_dir) {
+    match std::fs::create_dir_all(data_dir) {
         Ok(_) => {
             info!(
                 LOGGER,

@@ -75,7 +75,7 @@ async fn process(
 ) {
     tokio::spawn(async move {
         let mut state = state_store.get_default();
-        let mut transport = RespParser::default().framed(socket);
+        let mut transport = RespParser.framed(socket);
         while let Some(redis_value) = transport.next().await {
             if let Err(e) = redis_value {
                 error!(LOGGER, "Error recieving redis value {:?}", e);

@@ -209,7 +209,7 @@ impl From<ReturnValue> for RedisValueRef {
             ReturnValue::MultiStringRes(ms) => {
                 RedisValueRef::Array(ms.into_iter().map(RedisValueRef::BulkString).collect())
             }
-            ReturnValue::IntRes(i) => RedisValueRef::Int(i as i64),
+            ReturnValue::IntRes(i) => RedisValueRef::Int(i),
             ReturnValue::Error(e) => RedisValueRef::Error(Bytes::from_static(e)),
             ReturnValue::Array(a) => {
                 RedisValueRef::Array(a.into_iter().map(RedisValueRef::from).collect())

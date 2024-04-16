@@ -44,7 +44,7 @@ macro_rules! op_variants {
                 v
             };
         }
-        crate::as_item! {
+        $crate::as_item! {
             #[derive(Debug, Clone)]
             pub enum $name { $($variant_name($($arg),*),)* }
         }

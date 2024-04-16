@@ -1,8 +1,8 @@
 use redis_proto::database::{get_dump_file, load_state, save_state_interval};
 use redis_proto::logger::LOGGER;
-use redis_proto::startup::{startup_message, Config};
-use redis_proto::server::socket_listener;
 use redis_proto::scripting::{handle_redis_cmd, ScriptingBridge, ScriptingEngine};
+use redis_proto::server::socket_listener;
+use redis_proto::startup::{startup_message, Config};
 use tokio::sync::mpsc::channel;
 
 use slog::{info, warn};
@@ -37,10 +37,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let scripting_engine =
         ScriptingEngine::new(prog_string_rx, cmd_result_sx, state.clone(), &opt)?;
-    
+
     info!(LOGGER, "ScriptingEngine main loop started");
     std::thread::spawn(|| scripting_engine.main_loop());
-    
+
     let scripting_bridge = ScriptingBridge::new(prog_string_sx);
 
     tokio::spawn(handle_redis_cmd(

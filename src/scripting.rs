@@ -250,7 +250,7 @@ impl ScriptingEngine {
             };
             let f_args = args[1].clone(); // (arg1 arg2)
             let f_body = args[2].clone(); // (redis "set" arg1 arg2)
-            let res = interpreter_clone.add_dynamic_function(&fn_name, f_args, f_body);
+            let res = interpreter_clone.add_dynamic_function(fn_name, f_args, f_body);
             if res.is_ok() {
                 state_store.add_foreign_function(&fn_name.read());
             }

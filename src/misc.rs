@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
-use crate::types::{Count, Index, Key, ReturnValue, StateRef, StateStoreRef, Value, RedisValueRef};
 use crate::scripting::{Program, ScriptingBridge};
+use crate::types::{Count, Index, Key, RedisValueRef, ReturnValue, StateRef, StateStoreRef, Value};
 
 op_variants! {
     MiscOps,
