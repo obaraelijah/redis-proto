@@ -36,7 +36,7 @@ num-traits = "0.2.14"
 
 [dev-dependencies]
 pretty_assertions = "0.6.1"
-criterion = "0.3.0"
+criterion = { version = "0.3", features = ["html_reports"] }
 
 [[bench]]
 name = "keys_benchmark"
