@@ -1,4 +1,4 @@
-use slog::{debug, error};
+use slog::{debug, error, info};
 
 use crate::database::save_state;
 use crate::misc::misc_interact;
@@ -124,5 +124,33 @@ pub async fn socket_listener(
     dump_file: Dumpfile,
     config: Config,
 ) {
-    todo!()
+    // First, get the address determined and parsed
+    let addr_str = format!("{}:{}", "127.0.0.1", config.port);
+    let addr = match addr_str.parse::<SocketAddr>() {
+        Ok(s) => s,
+        Err(e) => {
+            error!(
+                LOGGER,
+                "Could not start server! Could not parse {} as listening address, given error: {}",
+                addr_str,
+                e
+            );
+            return;
+        }
+    };
+
+    // Second, bind/listen on that address
+    let listener = match TcpListener::bind(&addr).await {
+        Ok(s) => s,
+        Err(e) => {
+            error!(
+                LOGGER,
+                "Could not start server! Could not bind to {}, given error: {}", addr_str, e
+            );
+            if config.port <= 1024 {
+                info!(LOGGER, "Hint: You're attempting to bind to a privileged port. Try using -p 6379 or -p 8888");
+            }
+            return;
+        }
+    };
 }
