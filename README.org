@@ -1,0 +1,4 @@
+#+AUTHOR: Elijah Samson
+#+STARTUP: SHOWALL
+
+* Redis proto
