@@ -55,3 +55,68 @@ It's under construction at the moment.
 - =HVals (Key)=
 - =HStrLen (Key, Key)=
 - =HSetNX (Key, Key, Value)=
+
+*** SetOps
+
+- =SAdd (Key, RVec<Value>)=
+- =SCard (Key)=
+- =SDiff (RVec<Value>)=
+- =SDiffStore (Key, RVec<Value>)=
+- =SInter (RVec<Value>)=
+- =SInterStore (Key, RVec<Value>)=
+- =SIsMember (Key, Value)=
+- =SMembers (Key)=
+- =SMove (Key, Key, Value)=
+- =SPop (Key, Option<Count>)=
+- =SRandMembers (Key, Option<Count>)=
+- =SRem (Key, RVec<Value>)=
+- =SUnion (RVec<Value>)=
+- =SUnionStore (Key, RVec<Value>)=
+
+
+*** ZSetOps
+
+- =ZAdd (Key, RVec<(Score, Key)>)=
+- =ZRem (Key, RVec<Key>)=
+- =ZRange (Key, Score, Score)=
+- =ZCard (Key)=
+- =ZScore (Key, Key)=
+- =ZPopMax (Key, Count)=
+- =ZPopMin (Key, Count)=
+- =ZRank (Key, Key)=
+
+
+*** BloomOps
+
+- =BInsert (Key, Value)=
+- =BContains (Key, Value)=
+
+
+*** StackOps
+
+- =STPush (Key, Value)=
+- =STPop (Key)=
+- =STPeek (Key)=
+- =STSize (Key)=
+
+
+*** HyperLogLogOps
+
+- =PfAdd (Key, RVec<Value>)=
+- =PfCount (RVec<Key>)=
+- =PfMerge (Key, RVec<Key>)=
+
+
+*** MiscOps
+
+- =Keys ()=
+- =Exists (Vec<Key>)=
+- =Pong ()=
+- =FlushAll ()=
+- =FlushDB ()=
+- =Echo (Value)=
+- =PrintCmds ()=
+- =Select (Index)=
+- =Script (Value)=
+- =EmbeddedScript (Value, Vec<RedisValueRef>)=
+- =Info ()=
