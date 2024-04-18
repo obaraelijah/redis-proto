@@ -2,3 +2,56 @@
 #+STARTUP: SHOWALL
 
 * Redis proto
+
+A multi-threaded implementation of redis written in rust 🦀.
+
+This project is intended to be a drop-in replacement for redis.
+It's under construction at the moment.
+
+** Implemented Commands
+
+#+RESULTS:
+*** KeyOps
+
+- =Set (Key, Value)=
+- =MSet (RVec<(Key, Value)>)=
+- =Get (Key)=
+- =MGet (RVec<Key>)=
+- =Del (RVec<Key>)=
+- =Rename (Key, Key)=
+- =RenameNx (Key, Key)=
+
+
+*** ListOps
+
+- =LIndex (Key, Index)=
+- =LLen (Key)=
+- =LPop (Key)=
+- =LPush (Key, RVec<Value>)=
+- =LPushX (Key, Value)=
+- =LRange (Key, Index, Index)=
+- =LSet (Key, Index, Value)=
+- =LTrim (Key, Index, Index)=
+- =RPop (Key)=
+- =RPush (Key, RVec<Value>)=
+- =RPushX (Key, Value)=
+- =RPopLPush (Key, Key)=
+- =BLPop (Key, UTimeout)=
+- =BRPop (Key, UTimeout)=
+
+
+*** HashOps
+
+- =HGet (Key, Key)=
+- =HSet (Key, Key, Value)=
+- =HExists (Key, Key)=
+- =HGetAll (Key)=
+- =HMGet (Key, RVec<Key>)=
+- =HKeys (Key)=
+- =HMSet (Key, RVec<(Key, Value)>)=
+- =HIncrBy (Key, Key, Count)=
+- =HLen (Key)=
+- =HDel (Key, RVec<Key>)=
+- =HVals (Key)=
+- =HStrLen (Key, Key)=
+- =HSetNX (Key, Key, Value)=
