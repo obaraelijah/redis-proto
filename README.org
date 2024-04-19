@@ -8,6 +8,27 @@ A multi-threaded implementation of redis written in rust 🦀.
 This project is intended to be a drop-in replacement for redis.
 It's under construction at the moment.
 
+** Design
+
+
+=redis-proto= is a black-box multi-threaded re-implementation of redis, backed by [[https://tokio.rs/][tokio]].
+It features data-structure key-space/lock granularity, written entirely in safe rust.
+It's currently protocol compatible with redis, so you should be able to test it out with your favourite tools.
+
+The multi-threaded nature has advantages and disadvantages.
+On one hand, =KEYS *= isn't particularly crippling for the server as it'll just keep a thread busy.
+On the other hand, there's some lock-juggling overhead, especially for writes, which messes with tokio.
+
+** Building / Running
+
+There's currently no official release for the project. You can compile and install it yourself with the following command:
+
+: cargo install --git https://github.com/obaraelijah/redis-proto
+
+Note: This project requires the rust nightly. You can use [[https://rustup.rs/][rustup]] to install it.
+
+Once it compiles you should be able to run it with =~ redis-proto=.
+
 ** Implemented Commands
 
 #+RESULTS:
