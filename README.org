@@ -29,6 +29,57 @@ Note: This project requires the rust nightly. You can use [[https://rustup.rs/][
 
 Once it compiles you should be able to run it with =~ redis-proto=.
 
+If you wish to download and run it yourself, you can do the following
+
+#+begin_example
+~ git clone https://github.com/obaraelijah/redis-proto
+~ cd redis-proto
+~ cargo run
+#+end_example
+
+Then use your favorite redis client. Eg. =redis-cli=:
+
+#+begin_example
+~ redis-cli
+127.0.0.1:6379> set foo bar
+OK
+127.0.0.1:6379> get foo
+"bar"
+#+end_example
+
+Or using the redis library for python:
+
+#+begin_src python
+import redis
+from pprint import pprint
+
+r = redis.Redis()
+r.set('foobar', 'foobar')
+pprint(r.get('foobar'))
+
+for i in range(100):
+    r.rpush('list', i)
+
+list_res = r.lrange('list', 0, -1)
+
+pprint(list_res[0:3])
+pprint(sum(map(int, list_res)))
+
+total = 0
+for i in range(100):
+    total += int(r.lpop('list'))
+pprint(total)
+#+end_src
+
+Which will print:
+
+#+begin_src python
+b'foobar'
+[b'0', b'1', b'2']
+4950
+4950
+#+end_src
+
 ** Implemented Commands
 
 #+RESULTS:
