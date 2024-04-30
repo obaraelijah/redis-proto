@@ -82,7 +82,50 @@ b'foobar'
 4950
 #+end_src
 
+** Things left to do
+
+*** Basic Datastructures
+
+- [X] Keys
+- [X] Sets
+- [X] Lists
+- [X] Hashes
+- [ ] HyperLogLog
+- [ ] Geo
+- [-] Sorted Sets
+  - [X] Basic Functionality
+  - [ ] Still need some operations
+- [ ] Strings
+
+We should solidify the above before working on the more complex bits, but contributions are welcome :)
+
+*** Redis Compatibility
+
+- [X] Resp / server
+- [ ] Database compatibility
+  - [ ] Unsure if this is a good thing -- may be better to port existing dumps.
+- [ ] Blocking / Concurrent Ops (ttl/save-on-x-ops)
+- [ ] CLI / config compatibility
+- [ ] Authentication
+
+** Contribution Guide
+
 ** Implemented Commands
+
+#+BEGIN_SRC python :results output raw :format org :exports results
+  import redis
+
+  r = redis.StrictRedis(decode_responses=True)
+
+  all_commands = r.execute_command('printcmds')
+
+  for command in all_commands:
+      command_name, ops = command[0], command[1:]
+      print(f'*** {command_name}\n')
+      for op in ops:
+          print(f'- ={op}=')
+      print('\n')
+#+END_SRC
 
 #+RESULTS:
 *** KeyOps
