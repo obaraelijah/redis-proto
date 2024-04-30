@@ -8,7 +8,7 @@ A multi-threaded implementation of redis written in rust 🦀.
 This project is intended to be a drop-in replacement for redis.
 It's under construction at the moment.
 
-[[https://i.imgur.com/8Zb0gu5.png][https://imgur.com/a/gErIr7T]]
+[[https://imgur.com/a/gErIr7T.png][https://imgur.com/a/gErIr7T.png]]
 
 ** Design
 
