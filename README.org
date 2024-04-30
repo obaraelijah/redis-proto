@@ -110,6 +110,46 @@ We should solidify the above before working on the more complex bits, but contri
 
 ** Contribution Guide
 
+Conduct: =Have fun and be respectful. =
+
+Contact: Make an issue or PR against this repo, or send an email to =elijahobara357@gmail.com=. If you know of a better forum, please suggest it!
+
+NOTE: *DO NOT USE THE REDIS SOURCE CODE IN ANY WAY!*
+
+This project is under active development, so things are a little messy.
+
+The general design of =redis-proto= is:
+
+- A Command (=set foo bar=) is read off the socket and passed to the translate function in =src/ops.rs=.
+  - The parser generates a =RedisValue=, which is the lingua franca of =redis-proto=.
+- This gets converted to an =Ops::XYZ(XYZOps::Foobar(..))= enum object, which is consumed by the =op_interact= function.
+  - A macro is used to provide automate this.
+- This operation is executed against the global =State= object (using the =op_interact= function)
+  - This will return an =ReturnValue= type, which is a more convenient form of =RedisValue=.
+  - This =ReturnValue= is converted and sent back to the client.
+
+Therefore, if you want to do something like implement =hashes=, you will need to:
+
+1. Add a new struct member in =State=.
+   1. You first define the type: =type KeyHash = DashMap<Key, HashMap<Key, Value>>=
+   2. Then add it to State: =pub hashes: KeyHash=
+3. Define a new file for your data type, =src/hashes.rs=.
+   1. Keep your type definitions in =src/types.rs=!
+4. Create an enum to track your commands, =op_variants! { HashOps, HGet(Key, Key), HSet(Key, Key, Value) }=
+5. Implement parsing for your enum in =src/ops.rs=.
+   1. You should be able to follow the existing parsing infrastructure. Should just be extra entries in =translate_array= in =src/ops.rs=.
+   2. You will need to add your return type to the =ok!= macro. Just copy/paste an existing line.
+   3. You should return something like =ok!(HashOps::HSet(x, y, z))=.
+   4. A stretch goal is to automate parsing.
+6. Implement a =async *_interact= for your type; I would follow existing implementations (eg. =src/keys.rs=).
+   1. I would keep the redis docs open, and play around with the commands in the web console (or wherever) to determine behavior.
+   2. Add a new match entry in the =async op_interact= function in =src/ops.rs=.
+7. Test it! (follow existing testing bits; eg. =src/keys.rs=).
+8. Please add the commands to the list below.
+   1. If you're using emacs, just fire up the server and evaluate the babel block below (see =README.org= source)
+   2. Alternatively, copy the script into a terminal and copy/paste the output below. (see raw =README.org=)
+
+
 ** Implemented Commands
 
 #+BEGIN_SRC python :results output raw :format org :exports results
