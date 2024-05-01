@@ -12,7 +12,6 @@ It's under construction at the moment.
 
 ** Design
 
-
 =redis-proto= is a black-box multi-threaded re-implementation of redis, backed by [[https://tokio.rs/][tokio]].
 It features data-structure key-space/lock granularity, written entirely in safe rust.
 It's currently protocol compatible with redis, so you should be able to test it out with your favourite tools.
@@ -149,7 +148,6 @@ Therefore, if you want to do something like implement =hashes=, you will need to
    1. If you're using emacs, just fire up the server and evaluate the babel block below (see =README.org= source)
    2. Alternatively, copy the script into a terminal and copy/paste the output below. (see raw =README.org=)
 
-
 ** Implemented Commands
 
 #+BEGIN_SRC python :results output raw :format org :exports results
@@ -178,7 +176,6 @@ Therefore, if you want to do something like implement =hashes=, you will need to
 - =Rename (Key, Key)=
 - =RenameNx (Key, Key)=
 
-
 *** ListOps
 
 - =LIndex (Key, Index)=
@@ -195,7 +192,6 @@ Therefore, if you want to do something like implement =hashes=, you will need to
 - =RPopLPush (Key, Key)=
 - =BLPop (Key, UTimeout)=
 - =BRPop (Key, UTimeout)=
-
 
 *** HashOps
 
@@ -230,7 +226,6 @@ Therefore, if you want to do something like implement =hashes=, you will need to
 - =SUnion (RVec<Value>)=
 - =SUnionStore (Key, RVec<Value>)=
 
-
 *** ZSetOps
 
 - =ZAdd (Key, RVec<(Score, Key)>)=
@@ -242,12 +237,10 @@ Therefore, if you want to do something like implement =hashes=, you will need to
 - =ZPopMin (Key, Count)=
 - =ZRank (Key, Key)=
 
-
 *** BloomOps
 
 - =BInsert (Key, Value)=
 - =BContains (Key, Value)=
-
 
 *** StackOps
 
@@ -256,13 +249,11 @@ Therefore, if you want to do something like implement =hashes=, you will need to
 - =STPeek (Key)=
 - =STSize (Key)=
 
-
 *** HyperLogLogOps
 
 - =PfAdd (Key, RVec<Value>)=
 - =PfCount (RVec<Key>)=
 - =PfMerge (Key, RVec<Key>)=
-
 
 *** MiscOps
 
