@@ -1,4 +1,4 @@
-#+AUTHOR: Elijah Samson
+#+AUTHOR: Elijah Samson Obara
 #+STARTUP: SHOWALL
 
 * Redis proto
@@ -96,7 +96,6 @@ b'foobar'
   - [ ] Still need some operations
 - [ ] Strings
 
-We should solidify the above before working on the more complex bits, but contributions are welcome :)
 
 *** Redis Compatibility
 
