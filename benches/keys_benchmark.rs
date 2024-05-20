@@ -50,7 +50,7 @@ fn bench_interact(c: &mut Criterion) {
     });
 }
 
-fn bench_life_cycle(c: &mut Criterion) {
+fn bench_full_life_cycle(c: &mut Criterion) {
     let state_store = Arc::new(StateStore::default());
     c.bench_function("full_life_cycle", |b| {
         b.iter(|| async {
