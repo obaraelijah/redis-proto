@@ -1,7 +1,6 @@
 [package]
 name = "redis-proto"
 version = "0.1.0"
-authors = ["Elijah Samson <elijahobara357@gmail.com>"]
 edition = "2021"
 
 [lib]
