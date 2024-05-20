@@ -3,8 +3,6 @@
 
 * Redis   Proto
 
-[[https://github.com/obaraelijah/redis-proto/actions][https://github.com/obaraelijah/redis-proto/workflows/Redis%20proto%20Pipeline/badge.svg]]
-
 A multi-threaded implementation of redis written in rust 🦀.
 
 This project is intended to be a drop-in replacement for redis.
