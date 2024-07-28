@@ -1,20 +1,21 @@
+use std::sync::Arc;
 
-
-/// use crate::scripting::{Program, ScriptingBridge};
+use crate::scripting::{Program, ScriptingBridge};
 use crate::types::{Count, Index, Key, RedisValueRef, ReturnValue, StateRef, StateStoreRef, Value};
 
 op_variants! {
     MiscOps,
+    Keys(), // TODO: Add optional glob
+    Exists(Vec<Key>),
     Pong(),
     FlushAll(),
     FlushDB(),
-    Exists(Vec<Key>),
-    Keys(), // TODO: Add optional glob
+    // SwapDB(Index, Index),  // TODO: Need to figure out how to best sync clients.
+    Echo(Value),
     PrintCmds(),
     Select(Index),
     Script(Value),
     EmbeddedScript(Value, Vec<RedisValueRef>),
-    Echo(Value),
     Info()
 }
 
@@ -72,6 +73,7 @@ pub async fn misc_interact(
     misc_op: MiscOps,
     state: &mut StateRef,
     state_store: StateStoreRef,
+    scripting_bridge: Arc<ScriptingBridge>,
 ) -> ReturnValue {
     match misc_op {
         MiscOps::Pong() => ReturnValue::StringRes(Value::from_static(b"PONG")),
@@ -122,7 +124,21 @@ pub async fn misc_interact(
             .join("\r\n");
             ReturnValue::StringRes(info.into())
         }
-        MiscOps::Script(_) => todo!(),
-        MiscOps::EmbeddedScript(_, _) => todo!(),
+        MiscOps::Script(program) => {
+            let prog_str = String::from_utf8_lossy(&program).to_string();
+            let res = scripting_bridge
+                .handle_script_cmd(Program::String(prog_str))
+                .await;
+            ReturnValue::Ident(res)
+        }
+        MiscOps::EmbeddedScript(fn_name, fn_args) => {
+            // We need to send the program over the scripting bridge
+            // and wait for the result
+            let fn_name = String::from_utf8_lossy(&fn_name).to_string();
+            let res = scripting_bridge
+                .handle_script_cmd(Program::Function(fn_name, fn_args))
+                .await;
+            ReturnValue::Ident(res)
+        }
     }
 }

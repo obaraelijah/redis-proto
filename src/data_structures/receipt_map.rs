@@ -18,14 +18,14 @@ impl KeyTypes {
 }
 
 #[derive(Default, Debug)]
-pub struct ReceiptMap {
+pub struct RecieptMap {
     counter: Receipt,
     wakers: HashMap<Receipt, Waker>,
     timed_out: HashSet<Receipt>,
     keys: HashMap<KeyTypes, Vec<Receipt>>,
 }
 
-impl ReceiptMap {
+impl RecieptMap {
     pub fn get_receipt(&mut self) -> Receipt {
         self.counter += 1;
         self.counter

@@ -26,7 +26,7 @@ async fn timeout<T: Future<Output = ReturnValue>>(
     match time::timeout(Duration::from_secs(secs as u64), fut).await {
         Ok(ret) => ret,
         Err(_) => {
-            let mut rm = state.receipt_map.lock();
+            let mut rm = state.reciept_map.lock();
             rm.timeout_receipt(receipt);
             ReturnValue::Nil
         }
