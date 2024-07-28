@@ -2358,6 +2358,7 @@ checksum = "bec47e5bfd1bff0eeaf6d8b485cc1074891a197ab4225d504cb7a1ab88b02bf0"
 [[package]]
 name = "x9"
 version = "0.1.0"
+source = "git+https://github.com/obaraelijah/x9#a6bd1dc6952a91a558a8f6e0f3e9e04dbc306ead"
 dependencies = [
  "anyhow",
  "bigdecimal",
