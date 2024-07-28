@@ -85,6 +85,73 @@ impl ForeignData for RedisValueRef {
         Ok(res)
     }
 }
+
+#[allow(clippy::type_complexity)]
+pub struct ScriptingBridge {
+    prog_send: Sender<(
+        Program,
+        OneShotSender<Result<RedisValueRef, Box<dyn Error + Send>>>,
+    )>,
+}
+
+impl ScriptingBridge {
+    #[allow(clippy::type_complexity)]
+    pub fn new(
+        prog_send: Sender<(
+            Program,
+            OneShotSender<Result<RedisValueRef, Box<dyn Error + Send>>>,
+        )>,
+    ) -> Arc<Self> {
+        let sb = Self { prog_send };
+        Arc::new(sb)
+    }
+
+    pub async fn handle_script_cmd(&self, cmd: Program) -> RedisValueRef {
+        let (sx, rx) = oneshot_channel();
+        if let Err(e) = self.prog_send.send((cmd, sx)).await {
+            error!(LOGGER, "Failed to send program: {}", e);
+        }
+        match rx.await {
+            Ok(x9_result) => match x9_result {
+                Ok(r) => r,
+                Err(e) => RedisValueRef::Error(format!("{}", e).into()),
+            },
+            Err(e) => {
+                RedisValueRef::Error(format!("Failed to receive a response from x9 {}", e).into())
+            }
+        }
+    }
+}
+
+use tokio::sync::oneshot::{channel as oneshot_channel, Sender as OneShotSender};
+
+use tokio::sync::oneshot::error::TryRecvError;
+pub async fn handle_redis_cmd(
+    mut cmd_recv: Receiver<(Vec<RedisValueRef>, OneShotSender<RedisValueRef>)>,
+    state_store: StateStoreRef,
+    dump_file: DumpFile,
+    scripting_engine: Arc<ScriptingBridge>,
+) {
+    // TODO: Support, or return an error when interacting with
+    // change db commands
+    let mut state = state_store.get_default();
+    while let Some((cmd, return_channel)) = cmd_recv.recv().await {
+        debug!(LOGGER, "Recieved redis command: {:?}", cmd);
+        let res = process_command(
+            &mut state,
+            state_store.clone(),
+            dump_file.clone(),
+            scripting_engine.clone(),
+            RedisValueRef::Array(cmd),
+        )
+        .await;
+        if let Err(e) = return_channel.send(res) {
+            error!(LOGGER, "Failed to write response! {:?}", e);
+        }
+    }
+}
+
+
 #[derive(Debug)]
 pub enum Program {
     String(String),
@@ -103,6 +170,7 @@ pub struct ScriptingEngine {
 }
 
 impl ScriptingEngine {
+    #[allow(clippy::type_complexity)]
     pub fn new(
         prog_revc: Receiver<(
             Program,
