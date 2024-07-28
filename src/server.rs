@@ -1,7 +1,7 @@
 use crate::database::save_state;
 use crate::misc::misc_interact;
 use crate::ops::{op_interact, Ops};
-/// Server launch file. Starts the services to make redis-oxide work.
+/// Server launch file. Starts the services to make redis-proto work.
 use crate::{asyncresp::RespParser, scripting::ScriptingBridge};
 use crate::{logger::LOGGER, types::StateRef};
 use crate::{
@@ -121,7 +121,7 @@ async fn process(
     });
 }
 
-/// The listener for redis-oxide. Accepts connections and spawns handlers.
+/// The listener for redis-proto. Accepts connections and spawns handlers.
 pub async fn socket_listener(
     state_store: StateStoreRef,
     dump_file: Dumpfile,
