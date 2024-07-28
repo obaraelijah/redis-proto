@@ -1,8 +1,8 @@
+/// Server launch file. Starts the services to make redis-proto work.
+use crate::asyncresp::RespParser;
 use crate::database::save_state;
 use crate::misc::misc_interact;
 use crate::ops::{op_interact, Ops};
-/// Server launch file. Starts the services to make redis-proto work.
-use crate::asyncresp::RespParser;
 use crate::{logger::LOGGER, types::StateRef};
 use crate::{
     ops::translate,
@@ -13,7 +13,7 @@ use futures::StreamExt;
 use futures_util::sink::SinkExt;
 use slog::{debug, error, info};
 use std::sync::atomic::Ordering;
-use std::{net::SocketAddr, sync::Arc};
+use std::net::SocketAddr;
 use tokio::net::{TcpListener, TcpStream};
 use tokio_util::codec::Decoder;
 
@@ -45,9 +45,7 @@ pub async fn process_command(
             debug!(LOGGER, "running op {:?}", op.clone());
             // Step 1: Execute the operation the operation (from translate above)
             let res: ReturnValue = match op {
-                Ops::Misc(op) => {
-                    misc_interact(op, state, state_store.clone()),
-                }
+                Ops::Misc(op) => misc_interact(op, state, state_store.clone()).await,
                 _ => op_interact(op, state.clone()).await,
             };
             // Step 2: Update commands_ran_since_save counter, and save if necessary
@@ -66,11 +64,7 @@ pub async fn process_command(
 /// This will synchronously process requests / responses for this
 /// connection only. Other connections will be spread across the
 /// thread pool.
-async fn process(
-    socket: TcpStream,
-    state_store: StateStoreRef,
-    dump_file: Dumpfile,
-) {
+async fn process(socket: TcpStream, state_store: StateStoreRef, dump_file: Dumpfile) {
     tokio::spawn(async move {
         let mut state = state_store.get_default();
         let mut transport = RespParser.framed(socket);
@@ -83,7 +77,7 @@ async fn process(
                 &mut state,
                 state_store.clone(),
                 dump_file.clone(),
-            redis_value.unwrap(),
+                redis_value.unwrap(),
             )
             .await;
             // let res = match translate(redis_value.unwrap()) {
@@ -96,7 +90,7 @@ async fn process(
             //                     op,
             //                     &mut state,
             //                     state_store.clone(),
-            //             
+            //
             //                 )
             //                 .await
             //             }
@@ -119,11 +113,7 @@ async fn process(
 }
 
 /// The listener for redis-proto. Accepts connections and spawns handlers.
-pub async fn socket_listener(
-    state_store: StateStoreRef,
-    dump_file: Dumpfile,
-    config: Config,
-) {
+pub async fn socket_listener(state_store: StateStoreRef, dump_file: Dumpfile, config: Config) {
     // First, get the address determined and parsed.
     let addr_str = format!("{}:{}", "127.0.0.1", config.port);
     let addr = match addr_str.parse::<SocketAddr>() {
@@ -159,13 +149,7 @@ pub async fn socket_listener(
         match listener.accept().await {
             Ok((socket, _)) => {
                 debug!(LOGGER, "Accepted connection!");
-                process(
-                    socket,
-                    state_store.clone(),
-                    dump_file.clone(),
-         
-                )
-                .await;
+                process(socket, state_store.clone(), dump_file.clone()).await;
             }
             Err(e) => error!(LOGGER, "Failed to establish connectin: {:?}", e),
         };

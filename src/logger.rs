@@ -5,7 +5,7 @@
 use lazy_static::lazy_static;
 use slog::Logger;
 use sloggers::terminal::{Destination, TerminalLoggerBuilder};
-use sloggers::types::{Severity, SourceLocation};
+use sloggers::types::{Severity};
 use sloggers::Build;
 
 #[cfg(debug_assertions)]

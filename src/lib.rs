@@ -20,7 +20,6 @@ pub mod hyperloglog;
 pub mod keys;
 pub mod lists;
 pub mod misc;
-pub mod scripting;
 pub mod server;
 pub mod sets;
 pub mod sorted_sets;
