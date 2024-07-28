@@ -122,6 +122,15 @@ impl ScriptingEngine {
         Ok(res)
     }
 
+    pub fn main_loop(mut self) {
+        loop {
+            if let Some((program, return_channel)) = self.prog_revc.blocking_recv() {
+                debug!(LOGGER, "Recieved this program: {:?}", program);
+                self.spawn_handling_thread(program, return_channel);
+            }
+        }
+    }
+
     fn load_scripts_dir(&self, opts: &Config) -> Result<(), Box<dyn Error>> {
         if let Some(path) = &opts.scripts_dir {
             info!(LOGGER, "Loading scripts in {:?}", path);
@@ -157,8 +166,53 @@ impl ScriptingEngine {
         self.interpreter.add_function("redis", send_fn.to_x9_fn());
     }
 
+    /// Add the "def-redis-fn" function to the interpreter
+    ///
+    /// e.g. script '(def-redis-fn my-sum (a b) (+ a b))'
+    /// >>> my-sum "hello " world
+    /// "hello world"
+    fn embed_foreign_script(&self, state_store: StateStoreRef) {
+        // (def-redis-fn my-sum (a b) (+ a b))
+        let interpreter_clone = self.interpreter.clone();
+        let f = move |args: Variadic<Expr>| {
+            let args = args.into_vec();
+            let fn_name = match args[0].get_symbol_string() {
+                Ok(sym) => sym,
+                Err(e) => return Err(e),
+            };
+            let f_args = args[1].clone(); // (arg1 arg2)
+            let f_body = args[2].clone(); // (redis "set" arg1 arg2)
+            let res = interpreter_clone.add_dynamic_function(&fn_name, f_args, f_body);
+            if res.is_ok() {
+                state_store.add_foreign_function(&fn_name.read());
+            }
+            res
+        };
+        self.interpreter
+            .add_unevaled_function("def-redis-fn", f.to_x9_fn());
+    }
+
     fn setup_interpreter(&self, state_store: StateStoreRef) {
         // "redis"
         self.add_redis_fn();
+        // "def-redis-fn"
+        self.embed_foreign_script(state_store);
+    }
+
+    fn spawn_handling_thread(
+        &self,
+        program: Program,
+        return_channel: OneShotSender<Result<RedisValueRef, Box<dyn Error + Send>>>,
+    ) {
+        let interpreter = self.interpreter.clone();
+        std::thread::spawn(move || {
+            let res = match program {
+                Program::String(s) => interpreter.run_program::<RedisValueRef>(&s),
+                Program::Function(fn_name, fn_args) => interpreter.run_function(&fn_name, &fn_args),
+            };
+            if let Err(e) = return_channel.send(res) {
+                error!(LOGGER, "Failed to send program result! {:?}", e)
+            }
+        });
     }
 }
