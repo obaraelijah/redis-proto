@@ -33,7 +33,6 @@ growable-bloom-filter = "2.0.1"
 amadeus-streaming = "0.4.3"
 futures = "0.3.1"
 futures-util = "0.3.1"
-x7 = { git = "https://github.com/dpbriggs/x7.git", rev = "f1a410d0" }
 num-traits = "0.2.14"
 time = "0.3"
 

@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use crate::scripting::{Program, ScriptingBridge};
+/// use crate::scripting::{Program, ScriptingBridge};
 use crate::types::{Count, Index, Key, RedisValueRef, ReturnValue, StateRef, StateStoreRef, Value};
 
 op_variants! {
