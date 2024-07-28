@@ -12,8 +12,8 @@ use crate::{
 use futures::StreamExt;
 use futures_util::sink::SinkExt;
 use slog::{debug, error, info};
-use std::sync::atomic::Ordering;
 use std::net::SocketAddr;
+use std::sync::atomic::Ordering;
 use tokio::net::{TcpListener, TcpStream};
 use tokio_util::codec::Decoder;
 

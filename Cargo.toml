@@ -28,6 +28,7 @@ parking_lot = { version = "0.12.3", features = ["serde"] }
 directories = "5.0.1"
 rmp-serde = "0.15"
 smallvec = "1.4.1"
+x9 = { path = "../x9" }
 seahash = "3.0.6"
 growable-bloom-filter = "2.0.1"
 amadeus-streaming = "0.4.3"

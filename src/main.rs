@@ -3,7 +3,6 @@ use redis_proto::logger::LOGGER;
 use redis_proto::server::socket_listener;
 use redis_proto::startup::{startup_message, Config};
 
-
 use slog::{info, warn};
 use structopt::StructOpt;
 
