@@ -35,7 +35,7 @@ impl Future for KeyBlocking {
         match (self.f)() {
             Some(ret) => Poll::Ready(ret),
             None => {
-                let mut rm = self.state.receipt_map.lock();
+                let mut rm = self.state.reciept_map.lock();
                 rm.insert(self.receipt, cx.waker().clone(), KeyTypes::list(&self.key));
                 Poll::Pending
             }

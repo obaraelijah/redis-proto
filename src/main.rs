@@ -1,24 +1,26 @@
 use redis_proto::database::{get_dump_file, load_state, save_state_interval};
 use redis_proto::logger::LOGGER;
+use redis_proto::scripting::{handle_redis_cmd, ScriptingBridge, ScriptingEngine};
 use redis_proto::server::socket_listener;
 use redis_proto::startup::{startup_message, Config};
+use tokio::sync::mpsc::channel;
 
 use slog::{info, warn};
 use structopt::StructOpt;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // Get the args
+    // 1. Get the args.
     let opt = Config::from_args();
-    // print the fancy logo
+    // 2. Print the fancy logo.
     startup_message(&opt);
-    // Get the database file, making folders if necessary.
-    info!(LOGGER, "Initializing state...");
+    // 3. Get the database file, making folders if necessary.
+    info!(LOGGER, "Initializing State...");
     let dump_file = get_dump_file(&opt);
-    //  Load database state if it exists.
+    // 4. Load database state if it exists.
     info!(LOGGER, "Opening Datafile...");
     let state = load_state(dump_file.clone(), &opt)?;
-    // Spawn the save occassionally service
+    // 5. Spawn the save-occasionally service.
     info!(LOGGER, "Starting Server...");
     if !opt.memory_only {
         info!(LOGGER, "Spawning database saving task...");
@@ -29,8 +31,26 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             "Database is in memory-only mode. STATE WILL NOT BE SAVED!"
         );
     }
+    // 6. Create the channels for scripting
+    let (prog_string_sx, prog_string_rx) = channel(12);
+    let (cmd_result_sx, cmd_result_rx) = channel(12);
 
-    // Start the server! It will start listening for connections.
-    socket_listener(state.clone(), dump_file.clone(), opt).await;
+    let scripting_engine =
+        ScriptingEngine::new(prog_string_rx, cmd_result_sx, state.clone(), &opt)?;
+
+    info!(LOGGER, "ScriptingEngine main loop started");
+    std::thread::spawn(|| scripting_engine.main_loop());
+
+    let scripting_bridge = ScriptingBridge::new(prog_string_sx);
+
+    tokio::spawn(handle_redis_cmd(
+        cmd_result_rx,
+        state.clone(),
+        dump_file.clone(),
+        scripting_bridge.clone(),
+    ));
+
+    // 7. Start the server! It will start listening for connections.
+    socket_listener(state.clone(), dump_file.clone(), opt, scripting_bridge).await;
     Ok(())
 }

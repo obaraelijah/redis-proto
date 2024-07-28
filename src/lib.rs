@@ -4,6 +4,9 @@
 #[macro_use]
 extern crate lazy_static;
 
+#[macro_use]
+extern crate slog;
+
 pub mod asyncresp;
 pub mod database;
 pub mod logger;

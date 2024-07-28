@@ -11,17 +11,17 @@ use std::sync::Arc;
 use parking_lot::{Mutex, RwLock};
 use std::fs::File;
 
-use crate::data_structures::receipt_map::ReceiptMap;
+use crate::data_structures::receipt_map::RecieptMap;
 use crate::data_structures::sorted_set::SortedSet;
 use crate::data_structures::stack::Stack;
 
-// These types are used by state and ops to actually perform useful work.
+/// These types are used by state and ops to actually perform useful work.
 pub type Value = Bytes;
-// Key is the standard type to index our structures
+/// Key is the standard type to index our structures
 pub type Key = Bytes;
-/// Count is used for commands that count
+/// Count is used for commands that count.
 pub type Count = i64;
-/// Index is used to reprecent indices in structures
+/// Index is used to represent indices in structures.
 pub type Index = i64;
 /// Score is used in sorted sets
 pub type Score = i64;
@@ -31,7 +31,7 @@ pub type UTimeout = i64;
 pub type RedisBool = i64;
 
 /// DumpTimeoutUnitpe alias.
-pub type Dumpfile = Arc<Mutex<File>>;
+pub type DumpFile = Arc<Mutex<File>>;
 
 /// RedisValueRef is the canonical type for values flowing
 /// through the system. Inputs are converted into RedisValues,
@@ -41,9 +41,9 @@ pub enum RedisValueRef {
     BulkString(Bytes),
     SimpleString(Bytes),
     Error(Bytes),
+    ErrorMsg(Vec<u8>),
     Int(i64),
     Array(Vec<RedisValueRef>),
-    ErrorMsg(Vec<u8>), // This is not a RESP type. This is an redis-proto internal error type.
     NullArray,
     NullBulkString,
 }
@@ -82,12 +82,25 @@ impl std::fmt::Debug for RedisValueRef {
     }
 }
 
+// // TODO: Get rid of this
+// impl<'a> From<RedisValueRef> for RedisValueRef {
+//     fn from(other: RedisValueRef) -> RedisValueRef {
+//         match other {
+//             RedisValueRef::String(v) => RedisValueRef::BulkString(v.to_vec()),
+//             RedisValueRef::Error(e) => RedisValueRef::Error(e.to_vec()),
+//             RedisValueRef::Int(i) => RedisValueRef::Int(i),
+//             RedisValueRef::Array(a) => RedisValueRef::Array(a.into_iter().map(|i| i.into()).collect()),
+//             RedisValueRef::NullBulkString => RedisValueRef::NullBulkString,
+//             RedisValueRef::NullArray => RedisValueRef::NullArray,
+//         }
+//     }
+// }
+
 /// Special constants in the RESP protocol.
 pub const NULL_BULK_STRING: &str = "$-1\r\n";
 pub const NULL_ARRAY: &str = "*-1\r\n";
 pub const EMPTY_ARRAY: &str = "*0\r\n";
 
-// Redis Vector
 use crate::ops::RVec;
 
 /// Convenience type for returns value. Maps directly to RedisValues.
@@ -105,7 +118,7 @@ pub enum ReturnValue {
 
 /// Convenience trait to convert Count to ReturnValue.
 impl From<Count> for ReturnValue {
-    fn from(int: Count) -> Self {
+    fn from(int: Count) -> ReturnValue {
         ReturnValue::IntRes(int)
     }
 }
@@ -138,9 +151,9 @@ impl ReturnValue {
     }
 }
 
-/// Canonical type for key-value storage
+/// Canonical type for Key-Value storage.
 type KeyString = DashMap<Key, Value>;
-/// Canonical type for key-set storage
+/// Canonical type for Key-Set storage.
 type KeySet = DashMap<Key, HashSet<Value>>;
 /// Canonical type for Key-List storage.
 type KeyList = DashMap<Key, VecDeque<Value>>;
@@ -153,15 +166,15 @@ type KeyBloom = DashMap<Key, GrowableBloom>;
 type KeyStack = DashMap<Key, Stack<Value>>;
 type KeyHyperLogLog = DashMap<Key, amadeus_streaming::HyperLogLog<Value>>;
 
-///Top level database struct
-/// Holds all Stateref dbs, and will hand them out on request
+/// Top level database struct.
+/// Holds all StateRef dbs, and will hand them out on request.
 #[derive(Default, Serialize, Deserialize)]
 pub struct StateStore {
     pub states: DashMap<Index, StateRef>,
     #[serde(skip)]
-    pub commands_threshold: u64,
-    #[serde(skip)]
     pub commands_ran_since_save: AtomicU64,
+    #[serde(skip)]
+    pub commands_threshold: u64,
     #[serde(skip)]
     pub memory_only: bool,
     #[serde(skip)]
@@ -174,9 +187,8 @@ pub type StateStoreRef = Arc<StateStore>;
 /// Reference type for `State`
 pub type StateRef = Arc<State>;
 
-/// Reference type for State
 /// The state stored by redis-proto. These fields are the ones
-/// used by the various datastructures files (keys.rs, etc)
+/// used by the various datastructure files (keys.rs, etc)
 #[derive(Default, Serialize, Deserialize)]
 pub struct State {
     #[serde(default)]
@@ -196,20 +208,20 @@ pub struct State {
     #[serde(default)]
     pub hyperloglogs: KeyHyperLogLog,
     #[serde(skip)]
-    pub receipt_map: Mutex<ReceiptMap>,
+    pub reciept_map: Mutex<RecieptMap>,
 }
 
 /// Mapping of a ReturnValue to a RedisValueRef.
 impl From<ReturnValue> for RedisValueRef {
-    fn from(stat_ref: ReturnValue) -> Self {
-        match stat_ref {
+    fn from(state_res: ReturnValue) -> Self {
+        match state_res {
             ReturnValue::Ok => RedisValueRef::SimpleString(Bytes::from_static(b"OK")),
             ReturnValue::Nil => RedisValueRef::NullBulkString,
             ReturnValue::StringRes(s) => RedisValueRef::BulkString(s),
-            ReturnValue::MultiStringRes(ms) => {
-                RedisValueRef::Array(ms.into_iter().map(RedisValueRef::BulkString).collect())
+            ReturnValue::MultiStringRes(a) => {
+                RedisValueRef::Array(a.into_iter().map(RedisValueRef::BulkString).collect())
             }
-            ReturnValue::IntRes(i) => RedisValueRef::Int(i),
+            ReturnValue::IntRes(i) => RedisValueRef::Int(i as i64),
             ReturnValue::Error(e) => RedisValueRef::Error(Bytes::from_static(e)),
             ReturnValue::Array(a) => {
                 RedisValueRef::Array(a.into_iter().map(RedisValueRef::from).collect())

@@ -1,6 +1,6 @@
 use crate::logger::LOGGER;
 use crate::startup::Config;
-use crate::types::{Dumpfile, StateStore, StateStoreRef};
+use crate::types::{DumpFile, StateStore, StateStoreRef};
 use directories::ProjectDirs;
 use parking_lot::Mutex;
 use rmp_serde as rmps;
@@ -41,7 +41,7 @@ fn dump_state(state: StateStoreRef, dump_file: &mut File) -> Result<(), Box<dyn 
 }
 
 /// Load state from the dump_file
-pub fn load_state(dump_file: Dumpfile, config: &Config) -> Result<StateStoreRef, Box<dyn Error>> {
+pub fn load_state(dump_file: DumpFile, config: &Config) -> Result<StateStoreRef, Box<dyn Error>> {
     let mut contents = dump_file.lock(); // to prevent concurent access
     if contents.metadata()?.len() == 0 {
         return Ok(Arc::new(StateStore::default()));
@@ -83,7 +83,7 @@ fn default_data_dir() -> PathBuf {
     p
 }
 
-pub fn get_dump_file(config: &Config) -> Dumpfile {
+pub fn get_dump_file(config: &Config) -> DumpFile {
     let data_dir = match &config.data_dir {
         Some(dir) => dir.to_path_buf(),
         None => default_data_dir(),
@@ -108,7 +108,7 @@ pub fn get_dump_file(config: &Config) -> Dumpfile {
     Arc::new(Mutex::new(opened_file))
 }
 
-pub fn save_state(state: StateStoreRef, dump_file: Dumpfile) {
+pub fn save_state(state: StateStoreRef, dump_file: DumpFile) {
     info!(
         LOGGER,
         "Saving state ({}s or >={} ops ran)...", SAVE_STATE_PERIOD_SEC, state.commands_threshold
@@ -126,10 +126,10 @@ pub fn save_state(state: StateStoreRef, dump_file: Dumpfile) {
     }
 }
 
-/// Save the current State to Dumpfile.
+/// Save the current State to DumpFile.
 ///
 /// Panics if state fails to dump.
-pub async fn save_state_interval(state: StateStoreRef, dump_file: Dumpfile) {
+pub async fn save_state_interval(state: StateStoreRef, dump_file: DumpFile) {
     let mut interval = interval(Duration::from_millis(SAVE_STATE_PERIOD));
     loop {
         interval.tick().await;

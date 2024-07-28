@@ -39,10 +39,10 @@ impl std::fmt::Display for FFIError {
 impl Error for FFIError {}
 
 impl ForeignData for RedisValueRef {
-    fn from_x9(expr: &Expr) -> Result<Self, Box<dyn Error + Send>> {
+    fn to_x9(&self) -> Result<Expr, Box<dyn Error + Send>> {
         let res = match self {
             RedisValueRef::BulkString(s) | RedisValueRef::SimpleString(s) => {
-                Expr::String(bytes_to_string(s))
+                Expr::String(bytes_to_string(s).into())
             }
             RedisValueRef::Error(e) => {
                 return Err(FFIError::boxed(bytes_to_string(e)));
@@ -59,7 +59,7 @@ impl ForeignData for RedisValueRef {
         Ok(res)
     }
 
-    fn to_x9(&self) -> Result<Expr, Box<dyn Error + Send>> {
+    fn from_x9(expr: &Expr) -> Result<Self, Box<dyn Error + Send>> {
         let res =
             match expr {
                 Expr::Nil => RedisValueRef::NullArray,
@@ -67,7 +67,11 @@ impl ForeignData for RedisValueRef {
                     FFIError::boxed(format!("Failed to convert {} into an i64", n))
                 })?),
                 Expr::Integer(n) => RedisValueRef::Int(*n),
-                Expr::String(s) => RedisValueRef::BulkString(s.clone().into()),
+                Expr::String(s) => RedisValueRef::BulkString(
+                    Arc::try_unwrap(s.clone())
+                        .unwrap_or_else(|s| (*s).clone())
+                        .into(),
+                ),
                 Expr::Symbol(s) => RedisValueRef::BulkString(s.read().into()),
                 Expr::List(l) | Expr::Tuple(l) | Expr::Quote(l) => RedisValueRef::Array(
                     l.iter()
@@ -150,7 +154,6 @@ pub async fn handle_redis_cmd(
         }
     }
 }
-
 
 #[derive(Debug)]
 pub enum Program {
